@@ -3,7 +3,7 @@ import Cropper from 'react-easy-crop';
 import * as faceapi from 'face-api.js';
 import styles from '../styles/Home.module.css';
 import Image from 'next/image';
-import logo from '../public/logo.png'; // Assuming logo.png is in public/
+import logo from '../public/logo.png';
 
 export default function Home() {
   const [image, setImage] = useState(null);
@@ -14,9 +14,9 @@ export default function Home() {
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [message, setMessage] = useState('');
   const [isBgRemoved, setIsBgRemoved] = useState(false);
+  const [isCompliant, setIsCompliant] = useState(null);
   const imageRef = useRef(null);
 
-  // Load face-api.js models
   useEffect(() => {
     const loadModels = async () => {
       await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
@@ -30,7 +30,6 @@ export default function Home() {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
 
-  // Handle file selection and face detection
   const handleFileChange = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -40,7 +39,6 @@ export default function Home() {
       setPreviewUrl(reader.result);
       setImage(file);
 
-      // Perform face detection
       const img = new Image();
       img.src = reader.result;
       img.onload = async () => {
@@ -57,7 +55,22 @@ export default function Home() {
             y: box.y - padding / 2,
           });
           setZoom(600 / (box.width + padding));
-          setMessage('Face detected and crop adjusted');
+
+          // Compliance Checks
+          const landmarks = detections.landmarks.positions;
+          const isNeutral = checkNeutralExpression(landmarks); // Simple check
+          const hasShadows = checkShadows(img, box); // Basic shadow check
+          if (isNeutral && !hasShadows) {
+            setIsCompliant(true);
+            setMessage('Face detected, crop adjusted, and image complies.');
+          } else {
+            setIsCompliant(false);
+            setMessage(
+              'Face detected, crop adjusted. Warning: ' +
+              (isNeutral ? '' : 'Non-neutral expression detected. ') +
+              (hasShadows ? 'Possible shadows detected.' : '')
+            );
+          }
         } else {
           setMessage('No face detected. Please adjust manually.');
         }
@@ -66,13 +79,11 @@ export default function Home() {
     reader.readAsDataURL(file);
   };
 
-  // Handle background removal
   const handleRemoveBackground = async () => {
     if (!image) {
       setMessage('Please select an image first.');
       return;
     }
-
     const formData = new FormData();
     formData.append('file', image);
 
@@ -97,7 +108,6 @@ export default function Home() {
     }
   };
 
-  // Handle cropping and upload
   const handleCropAndSave = async () => {
     if (!croppedAreaPixels || !image) {
       setMessage('Please select and crop an image.');
@@ -153,9 +163,34 @@ export default function Home() {
     }
   };
 
+  // Simple compliance check functions (basic implementation)
+  const checkNeutralExpression = (landmarks) => {
+    // Check mouth openness (basic approximation using y-distance between lips)
+    const upperLip = landmarks[50]; // Upper lip center
+    const lowerLip = landmarks[58]; // Lower lip center
+    const mouthOpen = lowerLip.y - upperLip.y > 10; // Arbitrary threshold
+    return !mouthOpen; // Neutral if mouth is closed
+  };
+
+  const checkShadows = (img, box) => {
+    // Basic shadow check using pixel brightness (simplified)
+    const canvas = document.createElement('canvas');
+    canvas.width = box.width;
+    canvas.height = box.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, box.x, box.y, box.width, box.height, 0, 0, box.width, box.height);
+    const imageData = ctx.getImageData(0, 0, box.width, box.height);
+    const data = imageData.data;
+    let darkPixels = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+      if (brightness < 50) darkPixels++; // Arbitrary dark threshold
+    }
+    return (darkPixels / (box.width * box.height)) > 0.1; // More than 10% dark pixels
+  };
+
   return (
     <div className={styles.container}>
-      {/* Banner with Logo */}
       <div className={styles.banner}>
         <Image src={logo} alt="Snappcrop Logo" width={200} height={100} />
         <h1 className={styles.bannerTitle}>Snappcrop</h1>
@@ -192,6 +227,11 @@ export default function Home() {
               Crop & Save
             </button>
           </div>
+          {isCompliant !== null && (
+            <p className={styles.message}>
+              {isCompliant ? 'Image complies with passport standards.' : 'Image may not comply. Please adjust.'}
+            </p>
+          )}
         </div>
       )}
       {message && <p className={styles.message}>{message}</p>}
