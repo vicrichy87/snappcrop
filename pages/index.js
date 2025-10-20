@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Cropper from 'react-easy-crop';
+import * as faceapi from 'face-api.js';
 import styles from '../styles/Home.module.css';
 
 export default function Home() {
@@ -10,20 +11,89 @@ export default function Home() {
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [message, setMessage] = useState('');
+  const [isBgRemoved, setIsBgRemoved] = useState(false);
+  const imageRef = useRef(null);
+
+  // Load face-api.js models
+  useEffect(() => {
+    const loadModels = async () => {
+      await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
+      await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+      setMessage('Models loaded');
+    };
+    loadModels();
+  }, []);
 
   const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
 
-  // Handle file selection
-  const handleFileChange = (event) => {
+  // Handle file selection and face detection
+  const handleFileChange = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = () => setPreviewUrl(reader.result);
+    reader.onload = async () => {
+      setPreviewUrl(reader.result);
+      setImage(file);
+
+      // Perform face detection
+      const img = new Image();
+      img.src = reader.result;
+      img.onload = async () => {
+        imageRef.current = img;
+        const detections = await faceapi
+          .detectSingleFace(img)
+          .withFaceLandmarks();
+
+        if (detections) {
+          const { box } = detections.detection;
+          // Adjust crop to center face (passport photos: head ~50-70% of frame)
+          const padding = box.width * 0.5; // Add padding around face
+          setCrop({
+            x: box.x - padding / 2,
+            y: box.y - padding / 2,
+          });
+          setZoom(600 / (box.width + padding)); // Fit face to 600px canvas
+          setMessage('Face detected and crop adjusted');
+        } else {
+          setMessage('No face detected. Please adjust manually.');
+        }
+      };
+    };
     reader.readAsDataURL(file);
-    setImage(file);
+  };
+
+  // Handle background removal
+  const handleRemoveBackground = async () => {
+    if (!image) {
+      setMessage('Please select an image first.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', image);
+
+    try {
+      const response = await fetch('/api/remove-bg', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+
+      if (data.error) {
+        setMessage(`Error: ${data.error}`);
+        return;
+      }
+
+      setPreviewUrl(data.url);
+      setIsBgRemoved(true);
+      setMessage('Background removed successfully!');
+    } catch (error) {
+      setMessage('Background removal failed. Please try again.');
+      console.error(error);
+    }
   };
 
   // Handle cropping and upload
@@ -109,6 +179,13 @@ export default function Home() {
               onCropComplete={onCropComplete}
             />
           </div>
+          <button
+            onClick={handleRemoveBackground}
+            className={styles.download}
+            disabled={isBgRemoved}
+          >
+            {isBgRemoved ? 'Background Removed' : 'Remove Background'}
+          </button>
           <button onClick={handleCropAndSave} className={styles.download}>
             Crop & Save
           </button>
