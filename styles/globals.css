@@ -103,7 +103,7 @@ body {
 }
 
 .message {
-  color: #d32f2f; /* Red for error messages (unchanged, but fits theme) */
+  color: #d32f2f; /* Red for error messages */
   margin: 10px 0;
 }
 
@@ -121,17 +121,32 @@ body {
   background-color: #005bb5; /* Darker blue on hover */
 }
 
-.gallery {
-  list-style: none;
-  padding: 0;
-  margin: 20px 0;
+.galleryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 20px;
 }
 
 .galleryItem {
-  display: flex;
-  justify-content: space-between;
+  border: 1px solid #0070f3; /* Blue border */
+  border-radius: 4px;
   padding: 10px;
-  border-bottom: 1px solid #0070f3; /* Blue border */
+  text-align: center;
+}
+
+.thumbnail {
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.link {
+  color: #0070f3; /* Blue link */
+  text-decoration: underline;
+}
+
+.link:hover {
+  color: #005bb5; /* Darker blue on hover */
 }
 
 h1 {
@@ -146,4 +161,54 @@ p, ul {
 
 ul {
   text-align: left;
+}
+
+/* Responsive Design Adjustments */
+@media (max-width: 600px) {
+  .container {
+    margin: 10px;
+    padding: 10px;
+    width: 90%;
+  }
+
+  .banner {
+    flex-direction: column;
+    padding: 10px 5px;
+  }
+
+  .bannerTitle {
+    margin-left: 0;
+    margin-top: 5px;
+    font-size: 20px;
+  }
+
+  .upload {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .previewContainer {
+    height: auto;
+  }
+
+  .cropWrapper {
+    height: 300px;
+  }
+
+  .buttonGroup {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .button {
+    width: 100%;
+  }
+
+  .downloadLink {
+    width: 100%;
+  }
+
+  .galleryGrid {
+    grid-template-columns: 1fr;
+  }
 }
