@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Cropper from 'react-easy-crop';
 import * as faceapi from 'face-api.js';
 import styles from '../styles/Home.module.css';
+import Image from 'next/image';
+import logo from '../public/logo.png'; // Assuming logo.png is in public/
 
 export default function Home() {
   const [image, setImage] = useState(null);
@@ -49,13 +51,12 @@ export default function Home() {
 
         if (detections) {
           const { box } = detections.detection;
-          // Adjust crop to center face (passport photos: head ~50-70% of frame)
-          const padding = box.width * 0.5; // Add padding around face
+          const padding = box.width * 0.5;
           setCrop({
             x: box.x - padding / 2,
             y: box.y - padding / 2,
           });
-          setZoom(600 / (box.width + padding)); // Fit face to 600px canvas
+          setZoom(600 / (box.width + padding));
           setMessage('Face detected and crop adjusted');
         } else {
           setMessage('No face detected. Please adjust manually.');
@@ -103,7 +104,6 @@ export default function Home() {
       return;
     }
 
-    // Create canvas for cropping
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
@@ -111,7 +111,6 @@ export default function Home() {
 
     await new Promise((resolve) => (img.onload = resolve));
 
-    // Set canvas to 2x2 inches at 300 DPI (600x600 pixels)
     canvas.width = 600;
     canvas.height = 600;
 
@@ -127,12 +126,10 @@ export default function Home() {
       canvas.height
     );
 
-    // Convert to blob
     const blob = await new Promise((resolve) =>
       canvas.toBlob(resolve, 'image/jpeg', 0.95)
     );
 
-    // Upload via API route
     const formData = new FormData();
     formData.append('file', blob, `passport-${Date.now()}.jpg`);
 
@@ -158,8 +155,12 @@ export default function Home() {
 
   return (
     <div className={styles.container}>
-      <h1>Snappcrop</h1>
-      <p>Upload a selfie to create a passport photo.</p>
+      {/* Banner with Logo */}
+      <div className={styles.banner}>
+        <Image src={logo} alt="Snappcrop Logo" width={200} height={100} />
+        <h1 className={styles.bannerTitle}>Snappcrop</h1>
+      </div>
+      <p className={styles.subtitle}>Create passport photos from your selfie.</p>
       <input
         type="file"
         accept="image/*"
@@ -167,8 +168,8 @@ export default function Home() {
         className={styles.upload}
       />
       {previewUrl && (
-        <div className={styles.preview}>
-          <div style={{ position: 'relative', width: '100%', height: '400px' }}>
+        <div className={styles.previewContainer}>
+          <div className={styles.cropWrapper}>
             <Cropper
               image={previewUrl}
               crop={crop}
@@ -179,21 +180,23 @@ export default function Home() {
               onCropComplete={onCropComplete}
             />
           </div>
-          <button
-            onClick={handleRemoveBackground}
-            className={styles.download}
-            disabled={isBgRemoved}
-          >
-            {isBgRemoved ? 'Background Removed' : 'Remove Background'}
-          </button>
-          <button onClick={handleCropAndSave} className={styles.download}>
-            Crop & Save
-          </button>
+          <div className={styles.buttonGroup}>
+            <button
+              onClick={handleRemoveBackground}
+              className={styles.button}
+              disabled={isBgRemoved}
+            >
+              {isBgRemoved ? 'Background Removed' : 'Remove Background'}
+            </button>
+            <button onClick={handleCropAndSave} className={styles.button}>
+              Crop & Save
+            </button>
+          </div>
         </div>
       )}
       {message && <p className={styles.message}>{message}</p>}
       {downloadUrl && (
-        <a href={downloadUrl} download className={styles.download}>
+        <a href={downloadUrl} download className={styles.downloadLink}>
           Download Passport Photo
         </a>
       )}
