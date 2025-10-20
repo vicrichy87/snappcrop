@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
-import { supabase } from '../lib/supabase';
 import styles from '../styles/Home.module.css';
 
 export default function Home() {
@@ -10,13 +9,14 @@ export default function Home() {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [message, setMessage] = useState('');
 
   const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
 
-  // Handle file upload
-  const handleUpload = async (event) => {
+  // Handle file selection
+  const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -26,11 +26,14 @@ export default function Home() {
     setImage(file);
   };
 
-  // Handle cropping and saving
+  // Handle cropping and upload
   const handleCropAndSave = async () => {
-    if (!croppedAreaPixels || !image) return;
+    if (!croppedAreaPixels || !image) {
+      setMessage('Please select and crop an image.');
+      return;
+    }
 
-    // Create canvas to crop image
+    // Create canvas for cropping
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
@@ -38,7 +41,7 @@ export default function Home() {
 
     await new Promise((resolve) => (img.onload = resolve));
 
-    // Set canvas size to 2x2 inches at 300 DPI (600x600 pixels)
+    // Set canvas to 2x2 inches at 300 DPI (600x600 pixels)
     canvas.width = 600;
     canvas.height = 600;
 
@@ -54,39 +57,43 @@ export default function Home() {
       canvas.height
     );
 
-    // Convert canvas to blob
+    // Convert to blob
     const blob = await new Promise((resolve) =>
       canvas.toBlob(resolve, 'image/jpeg', 0.95)
     );
 
-    // Upload cropped image to Supabase
-    const filename = `${Date.now()}-passport.jpg`;
-    const { data, error } = await supabase.storage
-      .from('passport-photos')
-      .upload(filename, blob);
+    // Upload via API route
+    const formData = new FormData();
+    formData.append('file', blob, `passport-${Date.now()}.jpg`);
 
-    if (error) {
-      console.error('Upload error:', error);
-      return;
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+
+      if (data.error) {
+        setMessage(`Error: ${data.error}`);
+        return;
+      }
+
+      setDownloadUrl(data.url);
+      setMessage('Image uploaded successfully!');
+    } catch (error) {
+      setMessage('Upload failed. Please try again.');
+      console.error(error);
     }
-
-    // Get public URL
-    const { publicUrl } = supabase.storage
-      .from('passport-photos')
-      .getPublicUrl(filename);
-    setDownloadUrl(publicUrl);
-
-    // Save metadata
-    await supabase.from('photos').insert([{ filename }]);
   };
 
   return (
     <div className={styles.container}>
       <h1>Snappcrop</h1>
+      <p>Upload a selfie to create a passport photo.</p>
       <input
         type="file"
         accept="image/*"
-        onChange={handleUpload}
+        onChange={handleFileChange}
         className={styles.upload}
       />
       {previewUrl && (
@@ -96,7 +103,7 @@ export default function Home() {
               image={previewUrl}
               crop={crop}
               zoom={zoom}
-              aspect={1} // 1:1 for passport photo
+              aspect={1}
               onCropChange={setCrop}
               onZoomChange={setZoom}
               onCropComplete={onCropComplete}
@@ -107,6 +114,7 @@ export default function Home() {
           </button>
         </div>
       )}
+      {message && <p className={styles.message}>{message}</p>}
       {downloadUrl && (
         <a href={downloadUrl} download className={styles.download}>
           Download Passport Photo
