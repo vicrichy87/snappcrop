@@ -1,11 +1,10 @@
-import styles from '../styles/Home.module.css';
+import styles from '../styles/globals.css'; // Updated from Home.module.css
 import Image from 'next/image';
 import logo from '../public/logo.png';
 
 export default function About() {
   return (
     <div className={styles.container}>
-      {/* Banner with Logo */}
       <div className={styles.banner}>
         <Image src={logo} alt="Snappcrop Logo" width={200} height={100} />
         <h1 className={styles.bannerTitle}>Snappcrop</h1>
