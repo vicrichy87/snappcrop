@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Cropper from 'react-easy-crop';
 import * as faceapi from 'face-api.js';
-import styles from '../styles/Home.module.css';
+import styles from '../styles/globals.css'; // Updated from Home.module.css
 import Image from 'next/image';
 import logo from '../public/logo.png';
 
@@ -56,10 +56,9 @@ export default function Home() {
           });
           setZoom(600 / (box.width + padding));
 
-          // Compliance Checks
           const landmarks = detections.landmarks.positions;
-          const isNeutral = checkNeutralExpression(landmarks); // Simple check
-          const hasShadows = checkShadows(img, box); // Basic shadow check
+          const isNeutral = checkNeutralExpression(landmarks);
+          const hasShadows = checkShadows(img, box);
           if (isNeutral && !hasShadows) {
             setIsCompliant(true);
             setMessage('Face detected, crop adjusted, and image complies.');
@@ -163,17 +162,14 @@ export default function Home() {
     }
   };
 
-  // Simple compliance check functions (basic implementation)
   const checkNeutralExpression = (landmarks) => {
-    // Check mouth openness (basic approximation using y-distance between lips)
-    const upperLip = landmarks[50]; // Upper lip center
-    const lowerLip = landmarks[58]; // Lower lip center
-    const mouthOpen = lowerLip.y - upperLip.y > 10; // Arbitrary threshold
-    return !mouthOpen; // Neutral if mouth is closed
+    const upperLip = landmarks[50];
+    const lowerLip = landmarks[58];
+    const mouthOpen = lowerLip.y - upperLip.y > 10;
+    return !mouthOpen;
   };
 
   const checkShadows = (img, box) => {
-    // Basic shadow check using pixel brightness (simplified)
     const canvas = document.createElement('canvas');
     canvas.width = box.width;
     canvas.height = box.height;
@@ -184,9 +180,9 @@ export default function Home() {
     let darkPixels = 0;
     for (let i = 0; i < data.length; i += 4) {
       const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
-      if (brightness < 50) darkPixels++; // Arbitrary dark threshold
+      if (brightness < 50) darkPixels++;
     }
-    return (darkPixels / (box.width * box.height)) > 0.1; // More than 10% dark pixels
+    return (darkPixels / (box.width * box.height)) > 0.1;
   };
 
   return (
