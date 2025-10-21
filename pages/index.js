@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Cropper from 'react-easy-crop';
 import * as faceapi from 'face-api.js';
-import styles from '../styles/globals.css'; // Updated from Home.module.css
+// Removed: import styles from '../styles/globals.css';
 import Image from 'next/image';
 import logo from '../public/logo.png';
 
@@ -186,21 +186,21 @@ export default function Home() {
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.banner}>
+    <div className="container">
+      <div className="banner">
         <Image src={logo} alt="Snappcrop Logo" width={200} height={100} />
-        <h1 className={styles.bannerTitle}>Snappcrop</h1>
+        <h1 className="bannerTitle">Snappcrop</h1>
       </div>
-      <p className={styles.subtitle}>Create passport photos from your selfie.</p>
+      <p className="subtitle">Create passport photos from your selfie.</p>
       <input
         type="file"
         accept="image/*"
         onChange={handleFileChange}
-        className={styles.upload}
+        className="upload"
       />
       {previewUrl && (
-        <div className={styles.previewContainer}>
-          <div className={styles.cropWrapper}>
+        <div className="previewContainer">
+          <div className="cropWrapper">
             <Cropper
               image={previewUrl}
               crop={crop}
@@ -211,28 +211,28 @@ export default function Home() {
               onCropComplete={onCropComplete}
             />
           </div>
-          <div className={styles.buttonGroup}>
+          <div className="buttonGroup">
             <button
               onClick={handleRemoveBackground}
-              className={styles.button}
+              className="button"
               disabled={isBgRemoved}
             >
               {isBgRemoved ? 'Background Removed' : 'Remove Background'}
             </button>
-            <button onClick={handleCropAndSave} className={styles.button}>
+            <button onClick={handleCropAndSave} className="button">
               Crop & Save
             </button>
           </div>
           {isCompliant !== null && (
-            <p className={styles.message}>
+            <p className="message">
               {isCompliant ? 'Image complies with passport standards.' : 'Image may not comply. Please adjust.'}
             </p>
           )}
         </div>
       )}
-      {message && <p className={styles.message}>{message}</p>}
+      {message && <p className="message">{message}</p>}
       {downloadUrl && (
-        <a href={downloadUrl} download className={styles.downloadLink}>
+        <a href={downloadUrl} download className="downloadLink">
           Download Passport Photo
         </a>
       )}
