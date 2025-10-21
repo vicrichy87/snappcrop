@@ -1,5 +1,5 @@
+import '../styles/globals.css'; // Global CSS import allowed here
 import Link from 'next/link';
-import '../styles/globals.css';
 
 export default function App({ Component, pageProps }) {
   return (
