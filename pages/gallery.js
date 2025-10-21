@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import styles from '../styles/globals.css'; // Updated from Home.module.css
+// Removed: import styles from '../styles/globals.css';
 import Image from 'next/image';
 import logo from '../public/logo.png';
 
@@ -15,7 +15,7 @@ export default function Gallery() {
         const { data, error } = await supabase
           .from('photos')
           .select('filename, created_at')
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false});
 
         if (error) throw error;
         setPhotos(data);
@@ -31,31 +31,31 @@ export default function Gallery() {
   }, []);
 
   return (
-    <div className={styles.container}>
-      <div className={styles.banner}>
+    <div className="container">
+      <div className="banner">
         <Image src={logo} alt="Snappcrop Logo" width={200} height={100} />
-        <h1 className={styles.bannerTitle}>Snappcrop</h1>
+        <h1 className="bannerTitle">Snappcrop</h1>
       </div>
-      <p className={styles.subtitle}>View your recently processed passport photos.</p>
+      <p className="subtitle">View your recently processed passport photos.</p>
       {loading && <p>Loading...</p>}
-      {error && <p className={styles.message}>{error}</p>}
+      {error && <p className="message">{error}</p>}
       {!loading && !error && photos.length === 0 && (
         <p>No photos found. Upload a selfie to get started!</p>
       )}
       {photos.length > 0 && (
-        <div className={styles.galleryGrid}>
+        <div className="galleryGrid">
           {photos.map((photo) => {
             const imageUrl = supabase.storage
               .from('passport-photos')
               .getPublicUrl(photo.filename).data.publicUrl;
             return (
-              <div key={photo.filename} className={styles.galleryItem}>
+              <div key={photo.filename} className="galleryItem">
                 <Image
                   src={imageUrl}
                   alt={`Passport photo ${photo.filename}`}
                   width={150}
                   height={150}
-                  className={styles.thumbnail}
+                  className="thumbnail"
                 />
                 <p>{new Date(photo.created_at).toLocaleDateString()}</p>
               </div>
