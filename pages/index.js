@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Cropper from 'react-easy-crop';
-import * as faceapi from 'face-api.js';
-// Removed: import styles from '../styles/globals.css';
+import { supabase } from '../lib/supabase';
+import { getSession } from './_app';
 import Image from 'next/image';
 import logo from '../public/logo.png';
 
@@ -18,12 +18,27 @@ export default function Home() {
   const imageRef = useRef(null);
 
   useEffect(() => {
-    const loadModels = async () => {
-      await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
-      await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
-      setMessage('Models loaded');
+    let isMounted = true;
+
+    const loadFaceApi = async () => {
+      try {
+        const faceapi = await import('face-api.js');
+        await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
+        await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+        if (isMounted) setMessage('Models loaded');
+      } catch (error) {
+        if (isMounted) setMessage('Failed to load face detection models.');
+        console.error(error);
+      }
     };
-    loadModels();
+
+    if (typeof window !== 'undefined') {
+      loadFaceApi();
+    }
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
@@ -39,6 +54,7 @@ export default function Home() {
       setPreviewUrl(reader.result);
       setImage(file);
 
+      const faceapi = await import('face-api.js');
       const img = new Image();
       img.src = reader.result;
       img.onload = async () => {
@@ -113,6 +129,12 @@ export default function Home() {
       return;
     }
 
+    const session = await getSession();
+    if (!session) {
+      setMessage('Please log in to save your photo.');
+      return;
+    }
+
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
@@ -153,6 +175,12 @@ export default function Home() {
         setMessage(`Error: ${data.error}`);
         return;
       }
+
+      // Save metadata with user_id
+      await supabase.from('photos').insert({
+        user_id: session.user.id,
+        filename: data.url.split('/').pop(), // Extract filename from URL
+      });
 
       setDownloadUrl(data.url);
       setMessage('Image uploaded successfully!');
