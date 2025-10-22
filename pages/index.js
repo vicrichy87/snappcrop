@@ -12,6 +12,8 @@ import {
 import logo from "../public/logo.png";
 import { supabase } from "../lib/supabase";
 import { getSession } from "./_app";
+import Lottie from "lottie-react";
+import aiTransform from "../public/ai-transform.json"; // you'll add this next
 
 export default function Home() {
   const [file, setFile] = useState(null);
@@ -205,16 +207,23 @@ export default function Home() {
           <div className="absolute -left-8 -top-8 w-48 h-48 bg-sky-200/60 rounded-full blur-3xl animate-blob"></div>
           <div className="absolute -right-8 -bottom-8 w-56 h-56 bg-indigo-200/40 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
       
-          {/* phone mockup */}
-          <div className="relative w-56 h-[370px] bg-white rounded-2xl shadow-inner flex flex-col items-center justify-start p-4 border border-sky-100">
-            <div className="w-full h-44 rounded-lg bg-slate-100/60 border border-slate-100 flex items-center justify-center overflow-hidden">
-              <div className="text-slate-400 text-sm">Upload a selfie to preview</div>
-            </div>
-            <div className="mt-4 w-full text-center">
-              <div className="text-sm text-slate-500">1 selfie → 1 passport photo</div>
-              <div className="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-full bg-sky-50 border border-sky-100 text-sky-700 text-xs font-medium">
-                <FaMagic /> Auto Background Removal
-              </div>
+          {/* phone mockup */}              
+          {/* Hero Animation */}
+          <div className="relative w-[260px] sm:w-[320px] md:w-[360px] h-[380px] bg-white rounded-3xl shadow-xl flex items-center justify-center border border-sky-100 overflow-hidden">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1 }}
+              className="absolute inset-0 flex items-center justify-center"
+            >
+              <Lottie animationData={aiTransform} loop={true} autoplay={true} className="w-full h-full" />
+            </motion.div>
+          
+            {/* Subtle Glass Overlay */}
+            <div className="absolute bottom-0 w-full text-center bg-white/70 backdrop-blur-md py-3 border-t border-sky-100">
+              <p className="text-sm text-slate-600 font-medium">
+                AI-powered transformation in seconds
+              </p>
             </div>
           </div>
         </motion.div>
