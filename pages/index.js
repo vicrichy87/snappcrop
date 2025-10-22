@@ -262,97 +262,73 @@ export default function Home() {
 
       {/* Live Demo Section */}
       <section className="relative z-10 text-center pb-32">
-        <h2 className="text-4xl font-extrabold text-sky-800 mb-10">
+        <motion.h2
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+          className="text-4xl font-extrabold text-sky-800 mb-12"
+        >
           See Snappcrop in Action
-        </h2>
-        <div className="flex flex-col md:flex-row items-center justify-center gap-12">
+        </motion.h2>
+      
+        <div className="relative w-[280px] sm:w-[320px] md:w-[360px] mx-auto aspect-[3/4] rounded-3xl overflow-hidden shadow-2xl border border-blue-100">
+          {/* Animated Crossfade */}
           <motion.div
-            whileHover={{ scale: 1.03 }}
-            className="relative w-64 h-[420px] bg-gradient-to-br from-white via-blue-50 to-sky-100 border border-blue-100 rounded-3xl shadow-xl overflow-hidden"
+            key={previewUrl ? "after" : "before"}
+            initial={{ opacity: 0, scale: 1.05 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            transition={{ duration: 2, ease: "easeInOut" }}
+            className="absolute inset-0"
           >
-            <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">
-              Original Selfie
-            </div>
             <Image
               src="/demo-selfie.png"
-              alt="Before"
+              alt="Before - Selfie"
               fill
-              className="object-cover opacity-90"
+              className="object-cover brightness-95 transition-all duration-[3000ms] ease-in-out animate-fadeIn"
             />
           </motion.div>
-
-          <FaMagic className="text-5xl text-sky-500 animate-pulse hidden md:block" />
-
+      
+          {/* Overlaying the Passport Image (fades in/out) */}
           <motion.div
-            whileHover={{ scale: 1.03 }}
-            className="relative w-64 h-[420px] bg-gradient-to-br from-white via-green-50 to-emerald-100 border border-green-100 rounded-3xl shadow-xl overflow-hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 0, 1, 1, 0], scale: [1, 1.05, 1] }}
+            transition={{
+              duration: 8,
+              repeat: Infinity,
+              repeatType: "loop",
+              ease: "easeInOut",
+            }}
+            className="absolute inset-0"
           >
-            <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">
-              Passport Result
-            </div>
             <Image
               src="/demo-passport.png"
-              alt="After"
+              alt="After - Passport Photo"
               fill
-              className="object-cover opacity-90"
+              className="object-cover brightness-100 transition-all duration-700 ease-in-out"
             />
           </motion.div>
         </div>
-        <p className="mt-6 text-gray-600 text-sm">
-          Upload your photo and watch Snappcrop handle everything automatically.
+      
+        <p className="mt-6 text-gray-600 text-sm max-w-lg mx-auto">
+          Watch how Snappcrop automatically transforms your selfie into a passport-ready photo.
         </p>
       </section>
-
-      <footer className="text-center pb-10 text-gray-500 text-sm">
-        © {new Date().getFullYear()} Snappcrop — Speak. Snap. Smile.
-      </footer>
-
-      {/* animations */}
+      
       <style jsx>{`
-        @keyframes gradientFlow {
-          0% {
-            background-position: 0% 50%;
+        @keyframes fadeIn {
+          from {
+            opacity: 0.8;
+            transform: scale(1.03);
           }
-          50% {
-            background-position: 100% 50%;
-          }
-          100% {
-            background-position: 0% 50%;
-          }
-        }
-        .animate-gradient {
-          background-size: 200% 200%;
-          animation: gradientFlow 6s ease infinite;
-        }
-        @keyframes wave-slow {
-          0% {
-            transform: translateX(0);
-          }
-          50% {
-            transform: translateX(40px);
-          }
-          100% {
-            transform: translateX(0);
-          }
-        }
-        .animate-wave-slow {
-          animation: wave-slow 14s ease-in-out infinite;
-        }
-        .animate-wave-fast {
-          animation: wave-slow 9s ease-in-out infinite reverse;
-        }
-        @keyframes pulse-slow {
-          0%, 100% {
-            opacity: 0.4;
+          to {
+            opacity: 1;
             transform: scale(1);
           }
-          50% {
-            opacity: 0.6;
-            transform: scale(1.1);
-          }
         }
-        .animate-pulse-slow {
-          animation: pulse-slow 6s ease-in-out infinite;
+        .animate-fadeIn {
+          animation: fadeIn 2s ease-in-out;
         }
       `}</style>
     </main>
