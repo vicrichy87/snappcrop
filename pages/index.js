@@ -166,25 +166,28 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.7 }}
-            className="flex flex-wrap gap-4 mt-4"
+            className="flex flex-col sm:flex-row flex-wrap items-center justify-start sm:justify-start gap-3 sm:gap-4 mt-6 w-full"
           >
+            {/* Try It Now Button */}
             <button
               onClick={triggerFile}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white font-semibold rounded-full shadow-md transition-all transform hover:-translate-y-0.5"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 w-full sm:w-auto bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white font-semibold rounded-full shadow-md transition-all transform hover:-translate-y-0.5 text-sm sm:text-base"
             >
               <FaCloudUploadAlt /> Try It Now
             </button>
-      
+          
+            {/* About Button */}
             <a
               href="/about"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-sky-700 border border-sky-200 rounded-full font-semibold shadow-sm hover:shadow-md hover:bg-sky-50 transition-all"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 w-full sm:w-auto bg-white text-sky-700 border border-sky-200 rounded-full font-semibold shadow-sm hover:shadow-md hover:bg-sky-50 transition-all text-sm sm:text-base"
             >
               About
             </a>
-      
+          
+            {/* Gallery Button */}
             <a
               href="/gallery"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-sky-700 border border-sky-200 rounded-full font-semibold shadow-sm hover:shadow-md hover:bg-sky-50 transition-all"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 w-full sm:w-auto bg-white text-sky-700 border border-sky-200 rounded-full font-semibold shadow-sm hover:shadow-md hover:bg-sky-50 transition-all text-sm sm:text-base"
             >
               Gallery
             </a>
