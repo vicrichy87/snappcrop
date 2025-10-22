@@ -1,207 +1,396 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import Cropper from 'react-easy-crop';
-import { supabase } from '../lib/supabase';
-import { getSession } from './_app';
-import Image from 'next/image';
-import logo from '../public/logo.png';
-import { motion } from 'framer-motion';
-import { FaCamera, FaCloudUploadAlt, FaMagic } from 'react-icons/fa';
+// pages/index.js
+import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import Cropper from "react-easy-crop";
+import { motion } from "framer-motion";
+import { FaCamera, FaCloudUploadAlt, FaMagic, FaDownload } from "react-icons/fa";
+import logo from "../public/logo.png";
+import { supabase } from "../lib/supabase";
+import { getSession } from "./_app";
+
+/**
+ * Snappcrop - Elegant Home + Photo Cropper
+ * - Upload selfie or take from camera
+ * - Preview with react-easy-crop
+ * - Remove background (server-side /api/remove-bg)
+ * - Crop & save (POST to /api/upload then save metadata to Supabase)
+ *
+ * Note: Tailwind utility classes used heavily. Ensure tailwind is configured
+ * and styles/globals.css imports the Tailwind directives.
+ */
 
 export default function Home() {
-  const [image, setImage] = useState(null);
+  // image & editor state
+  const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [isBgRemoved, setIsBgRemoved] = useState(false);
   const [downloadUrl, setDownloadUrl] = useState(null);
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // cropper state
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
-  const [message, setMessage] = useState('');
-  const [isBgRemoved, setIsBgRemoved] = useState(false);
-  const [isCompliant, setIsCompliant] = useState(null);
-  const imageRef = useRef(null);
+  const inputRef = useRef(null);
 
+  // load optional face-api (non-blocking)
   useEffect(() => {
-    let isMounted = true;
-    const loadFaceApi = async () => {
+    let mounted = true;
+    (async () => {
+      if (typeof window === "undefined") return;
       try {
-        const faceapi = await import('face-api.js');
-        await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
-        await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
-        if (isMounted) setMessage('Models loaded');
-      } catch (error) {
-        if (isMounted) setMessage('Failed to load face detection models.');
-        console.error(error);
+        // lazy-load only if present in node_modules/public/models
+        const faceapi = await import("face-api.js").catch(() => null);
+        if (!faceapi) return;
+        await faceapi.nets.ssdMobilenetv1.loadFromUri("/models");
+        await faceapi.nets.faceLandmark68Net.loadFromUri("/models");
+        if (mounted) setMessage((m) => (m ? m : "Face models ready"));
+      } catch {
+        // silent fail
       }
-    };
-    if (typeof window !== 'undefined') loadFaceApi();
-    return () => (isMounted = false);
+    })();
+    return () => (mounted = false);
   }, []);
 
-  const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
-    setCroppedAreaPixels(croppedAreaPixels);
+  // helpers
+  const onCropComplete = useCallback((area, areaPixels) => {
+    setCroppedAreaPixels(areaPixels);
   }, []);
 
-  const handleFileChange = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+  const handleFileChange = async (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (!f.type.startsWith("image/")) {
+      setMessage("Please select a valid image file.");
+      return;
+    }
+    setMessage("");
+    setIsBgRemoved(false);
+    setDownloadUrl(null);
+    setFile(f);
     const reader = new FileReader();
-    reader.onload = async () => {
-      setPreviewUrl(reader.result);
-      setImage(file);
-    };
-    reader.readAsDataURL(file);
+    reader.onload = () => setPreviewUrl(reader.result);
+    reader.readAsDataURL(f);
   };
 
+  const triggerFile = () => inputRef.current?.click();
+
   const handleRemoveBackground = async () => {
-    if (!image) return setMessage('Please select an image first.');
-    const formData = new FormData();
-    formData.append('file', image);
+    if (!file || !previewUrl) {
+      setMessage("Select an image first.");
+      return;
+    }
+    setLoading(true);
+    setMessage("Removing background...");
     try {
-      const response = await fetch('/api/remove-bg', { method: 'POST', body: formData });
-      const data = await response.json();
-      if (data.error) return setMessage(`Error: ${data.error}`);
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/remove-bg", { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data?.error || "Remove BG failed");
       setPreviewUrl(data.url);
       setIsBgRemoved(true);
-      setMessage('Background removed successfully!');
-    } catch (error) {
-      console.error(error);
-      setMessage('Background removal failed.');
+      setMessage("Background removed — looking great!");
+    } catch (err) {
+      console.error(err);
+      setMessage("Background removal failed. Try again or upload a clearer selfie.");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleCropAndSave = async () => {
-    if (!croppedAreaPixels || !image) return setMessage('Please select and crop an image.');
-    const session = await getSession();
-    if (!session) return setMessage('Please log in to save your photo.');
-
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    img.src = previewUrl;
-    await new Promise((resolve) => (img.onload = resolve));
-    canvas.width = 600;
-    canvas.height = 600;
-    ctx.drawImage(img, croppedAreaPixels.x, croppedAreaPixels.y, croppedAreaPixels.width, croppedAreaPixels.height, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.95));
-
-    const formData = new FormData();
-    formData.append('file', blob, `passport-${Date.now()}.jpg`);
-
+    if (!croppedAreaPixels || !previewUrl) {
+      setMessage("Please crop the image first.");
+      return;
+    }
+    setLoading(true);
+    setMessage("Preparing image...");
     try {
-      const response = await fetch('/api/upload', { method: 'POST', body: formData });
-      const data = await response.json();
-      if (data.error) return setMessage(`Error: ${data.error}`);
+      // draw crop to canvas
+      const img = new Image();
+      img.src = previewUrl;
+      await new Promise((r) => (img.onload = r));
+      const canvas = document.createElement("canvas");
+      canvas.width = 600; // produce 600x600 final
+      canvas.height = 600;
+      const ctx = canvas.getContext("2d");
 
-      await supabase.from('photos').insert({ user_id: session.user.id, filename: data.url.split('/').pop() });
+      // draw selected area scaled to canvas
+      ctx.drawImage(
+        img,
+        croppedAreaPixels.x,
+        croppedAreaPixels.y,
+        croppedAreaPixels.width,
+        croppedAreaPixels.height,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.95));
+      const fd = new FormData();
+      fd.append("file", blob, `snappcrop-${Date.now()}.jpg`);
+
+      setMessage("Uploading...");
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data?.error || "Upload failed");
+
+      // store metadata in Supabase
+      const session = await getSession();
+      if (session?.user?.id) {
+        await supabase.from("photos").insert({
+          user_id: session.user.id,
+          filename: data.url.split("/").pop(),
+        });
+      }
       setDownloadUrl(data.url);
-      setMessage('Image uploaded successfully!');
-    } catch (error) {
-      console.error(error);
-      setMessage('Upload failed.');
+      setMessage("Saved! Your passport photo is ready.");
+    } catch (err) {
+      console.error(err);
+      setMessage("Save failed. Try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
+  // UI variants for framer-motion
+  const fadeUp = { hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } };
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-blue-100 flex flex-col items-center justify-center text-gray-700 overflow-hidden">
-      {/* Header */}
-      <motion.header
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ type: 'spring', duration: 1 }}
-        className="text-center mb-6"
-      >
-        <div className="flex items-center justify-center space-x-3 mb-4">
-          <Image src={logo} alt="Snappcrop Logo" width={80} height={80} className="rounded-xl" />
-          <h1 className="text-4xl font-extrabold text-blue-700 drop-shadow-md">Snappcrop</h1>
+    <main className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-sky-100 flex flex-col items-center">
+      {/* NAV / HERO */}
+      <section className="w-full max-w-6xl px-6 lg:px-12 py-10 flex flex-col md:flex-row items-center justify-between gap-8">
+        <div className="flex items-center gap-4">
+          <div className="relative w-20 h-20 rounded-3xl overflow-hidden shadow-xl">
+            <Image src={logo} alt="Snappcrop" quality={90} fill style={{ objectFit: "cover" }} />
+          </div>
+          <div>
+            <h1 className="text-3xl md:text-4xl font-extrabold text-sky-800 leading-tight">
+              Snappcrop — Instant passport photos from your selfie
+            </h1>
+            <p className="mt-2 text-slate-600 max-w-xl">
+              Smart crop, background removal, and format-ready exports for passports, visas and ID cards — all in seconds.
+            </p>
+            <div className="mt-4 flex gap-3">
+              <button
+                onClick={triggerFile}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-full shadow-md transition"
+              >
+                <FaCloudUploadAlt /> Try it now
+              </button>
+              <a href="#how" className="inline-flex items-center gap-2 px-4 py-2 border border-sky-200 rounded-full text-sky-700 hover:bg-sky-50 transition">
+                How it works
+              </a>
+            </div>
+          </div>
         </div>
-        <p className="text-lg font-medium text-gray-600">AI-powered passport photo generator — instantly from your selfie.</p>
-      </motion.header>
 
-      {/* Upload Section */}
-      <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: 'spring', duration: 0.8 }}
-        className="bg-white p-8 rounded-2xl shadow-2xl w-[90%] md:w-[600px] text-center"
-      >
-        <motion.div whileHover={{ scale: 1.05 }} className="mb-6 flex flex-col items-center">
-          <FaCamera className="text-5xl text-blue-600 mb-3 animate-bounce" />
-          <label className="cursor-pointer bg-blue-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-blue-700 transition">
-            <FaCloudUploadAlt className="inline mr-2" />
-            Upload or Take Selfie
-            <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-          </label>
+        {/* Animated hero visual */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6 }}
+          className="relative w-full max-w-[420px] aspect-[16/10] bg-gradient-to-br from-white to-sky-50 rounded-3xl shadow-2xl border border-sky-100 overflow-hidden flex items-center justify-center"
+        >
+          {/* decorative blurred blobs */}
+          <div className="absolute -left-8 -top-8 w-48 h-48 bg-sky-200/60 rounded-full blur-3xl animate-blob"></div>
+          <div className="absolute -right-8 -bottom-8 w-56 h-56 bg-amber-200/40 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
+
+          {/* phone mockup with floating avatar preview */}
+          <div className="relative w-56 h-[370px] bg-white rounded-2xl shadow-inner flex flex-col items-center justify-start p-4">
+            <div className="w-full h-44 rounded-lg bg-slate-100/60 border border-slate-100 flex items-center justify-center overflow-hidden">
+              {/* placeholder phone image */}
+              <div className="text-slate-400 text-sm">Upload a selfie to preview</div>
+            </div>
+            <div className="mt-4 w-full text-center">
+              <div className="text-sm text-slate-500">1 selfie → 1 passport photo</div>
+              <div className="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-full bg-sky-50 border border-sky-100 text-sky-700 text-xs font-medium">
+                <FaMagic /> Auto background removal
+              </div>
+            </div>
+          </div>
         </motion.div>
+      </section>
 
-        {previewUrl && (
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="relative border-4 border-blue-100 rounded-xl overflow-hidden mb-5"
-          >
-            <div className="w-full h-[400px] relative">
-              <Cropper
-                image={previewUrl}
-                crop={crop}
-                zoom={zoom}
-                aspect={1}
-                onCropChange={setCrop}
-                onZoomChange={setZoom}
-                onCropComplete={onCropComplete}
-              />
+      {/* MAIN EDITOR CARD */}
+      <section className="w-full max-w-4xl px-6 lg:px-12 mb-12">
+        <motion.div
+          initial="hidden"
+          animate="show"
+          variants={{ show: { transition: { staggerChildren: 0.08 } } }}
+          className="bg-white rounded-3xl shadow-2xl p-6 md:p-10"
+        >
+          {/* Upload / Controls */}
+          <motion.div variants={fadeUp} className="flex flex-col md:flex-row gap-6 items-start">
+            {/* Left: uploader + cropper preview */}
+            <div className="flex-1">
+              <div className="border border-slate-100 rounded-xl overflow-hidden">
+                {/* preview area */}
+                <div className="relative w-full h-[420px] bg-slate-50">
+                  {previewUrl ? (
+                    <Cropper
+                      image={previewUrl}
+                      crop={crop}
+                      zoom={zoom}
+                      aspect={1}
+                      onCropChange={setCrop}
+                      onZoomChange={setZoom}
+                      onCropComplete={onCropComplete}
+                      showGrid={false}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
+                      <FaCamera size={42} />
+                      <p className="mt-3">No image selected. Click “Upload” to begin.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* zoom control */}
+              <div className="mt-4 flex items-center gap-3">
+                <input
+                  aria-label="Zoom"
+                  type="range"
+                  min={1}
+                  max={3}
+                  step={0.01}
+                  value={zoom}
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  className="w-full"
+                />
+                <div className="w-36 text-sm text-slate-500 text-right">Zoom</div>
+              </div>
+            </div>
+
+            {/* Right: actions & info */}
+            <div className="w-full md:w-[320px] flex-shrink-0">
+              <div className="sticky top-24">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-slate-600">Upload</label>
+                  <div className="mt-2 flex gap-3">
+                    <button
+                      onClick={triggerFile}
+                      className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg shadow"
+                    >
+                      <FaCloudUploadAlt /> Upload / Take photo
+                    </button>
+                    <input ref={inputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-slate-600">Background</label>
+                  <div className="mt-2 flex gap-3">
+                    <button
+                      onClick={handleRemoveBackground}
+                      disabled={!previewUrl || loading}
+                      className={`flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold transition ${
+                        isBgRemoved ? "bg-emerald-500 text-white" : "bg-white text-sky-700 border border-sky-100 hover:shadow"
+                      }`}
+                    >
+                      <FaMagic />
+                      {isBgRemoved ? "Removed" : loading ? "Working..." : "Remove BG"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-slate-600">Export</label>
+                  <div className="mt-2 grid grid-cols-1 gap-3">
+                    <button
+                      onClick={handleCropAndSave}
+                      disabled={loading || !previewUrl}
+                      className="w-full inline-flex items-center justify-center gap-3 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold shadow"
+                    >
+                      <FaDownload /> Crop & Save (600×600)
+                    </button>
+
+                    {downloadUrl && (
+                      <a
+                        href={downloadUrl}
+                        className="w-full inline-flex items-center justify-center gap-3 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold shadow"
+                        download
+                      >
+                        Download Photo
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                <div className="text-sm text-slate-600 space-y-2">
+                  <div>
+                    <strong className="text-slate-700">Tips</strong>
+                    <ul className="list-disc ml-5 mt-2">
+                      <li>Face forward, neutral expression</li>
+                      <li>Avoid heavy shadows and bright backlight</li>
+                      <li>Use plain clothes and remove glasses if possible</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* small message */}
+                <div className="mt-6 text-center text-sm">
+                  <div className="inline-block px-3 py-2 rounded-lg bg-sky-50 border border-sky-100 text-slate-700 shadow-sm">
+                    {message || "Ready"}
+                  </div>
+                </div>
+              </div>
             </div>
           </motion.div>
-        )}
 
-        {/* Buttons */}
-        {previewUrl && (
-          <div className="flex flex-wrap justify-center gap-4 mt-4">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleRemoveBackground}
-              className={`px-6 py-3 rounded-full text-white font-semibold shadow-md ${
-                isBgRemoved ? 'bg-green-500' : 'bg-blue-600 hover:bg-blue-700'
-              }`}
-            >
-              <FaMagic className="inline mr-2" />
-              {isBgRemoved ? 'Background Removed' : 'Remove Background'}
-            </motion.button>
+          {/* features / footer area */}
+          <motion.div variants={fadeUp} className="mt-8 border-t pt-6">
+            <div id="how" className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="p-4 rounded-xl bg-sky-50 border border-sky-100">
+                <h4 className="font-semibold text-sky-700">Smart Crop</h4>
+                <p className="mt-2 text-sm text-slate-600">Auto-centers your face and suggests a perfect passport crop.</p>
+              </div>
+              <div className="p-4 rounded-xl bg-sky-50 border border-sky-100">
+                <h4 className="font-semibold text-sky-700">Background Removal</h4>
+                <p className="mt-2 text-sm text-slate-600">AI-powered background replacement for official requirements.</p>
+              </div>
+              <div className="p-4 rounded-xl bg-sky-50 border border-sky-100">
+                <h4 className="font-semibold text-sky-700">Formats & Download</h4>
+                <p className="mt-2 text-sm text-slate-600">Export 600×600 or other sizes ready for printing or upload.</p>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      </section>
 
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleCropAndSave}
-              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-full font-semibold shadow-md"
-            >
-              Crop & Save
-            </motion.button>
-          </div>
-        )}
+      {/* FOOTER */}
+      <footer className="w-full py-8 text-center text-sm text-slate-500">
+        © {new Date().getFullYear()} Snappcrop — Built with care • Privacy-focused
+      </footer>
 
-        {/* Messages */}
-        {message && <p className="mt-4 text-sm text-gray-600 italic">{message}</p>}
-        {downloadUrl && (
-          <motion.a
-            whileHover={{ scale: 1.05 }}
-            href={downloadUrl}
-            download
-            className="inline-block mt-6 px-6 py-3 bg-green-600 text-white rounded-full font-bold hover:bg-green-700 shadow-md"
-          >
-            Download Passport Photo
-          </motion.a>
-        )}
-      </motion.div>
-
-      {/* Footer */}
-      <motion.footer
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.2, duration: 1 }}
-        className="mt-10 text-center text-gray-500 text-sm"
-      >
-        © {new Date().getFullYear()} Snappcrop. All rights reserved.
-      </motion.footer>
-    </div>
+      {/* tiny utility styles (animation helper) */}
+      <style jsx>{`
+        @keyframes blob {
+          0% {
+            transform: translateY(0px) scale(1);
+          }
+          33% {
+            transform: translateY(-8px) scale(1.05);
+          }
+          66% {
+            transform: translateY(0px) scale(1);
+          }
+          100% {
+            transform: translateY(0px) scale(1);
+          }
+        }
+        .animate-blob {
+          animation: blob 6s infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+      `}</style>
+    </main>
   );
 }
