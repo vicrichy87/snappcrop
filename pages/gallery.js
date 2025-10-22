@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-// Removed: import styles from '../styles/globals.css';
+import { useRouter } from 'next/router';
 import Image from 'next/image';
 import logo from '../public/logo.png';
 
@@ -8,27 +8,40 @@ export default function Gallery() {
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const router = useRouter();
 
   useEffect(() => {
-    async function fetchPhotos() {
-      try {
-        const { data, error } = await supabase
-          .from('photos')
-          .select('filename, created_at')
-          .order('created_at', { ascending: false});
-
-        if (error) throw error;
-        setPhotos(data);
-      } catch (err) {
-        setError('Failed to load gallery. Please try again.');
-        console.error(err);
-      } finally {
-        setLoading(false);
+    const checkAuth = async () => {
+      const session = await getSession();
+      if (!session) {
+        router.push('/login');
+      } else {
+        fetchPhotos();
       }
-    }
+    };
 
-    fetchPhotos();
-  }, []);
+    checkAuth();
+  }, [router]);
+
+  const fetchPhotos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('photos')
+        .select('filename, created_at')
+        .eq('user_id', (await getSession())?.user.id) // Filter by current user
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPhotos(data);
+    } catch (err) {
+      setError('Failed to load gallery. Please try again.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <p>Loading...</p>;
 
   return (
     <div className="container">
@@ -37,7 +50,6 @@ export default function Gallery() {
         <h1 className="bannerTitle">Snappcrop</h1>
       </div>
       <p className="subtitle">View your recently processed passport photos.</p>
-      {loading && <p>Loading...</p>}
       {error && <p className="message">{error}</p>}
       {!loading && !error && photos.length === 0 && (
         <p>No photos found. Upload a selfie to get started!</p>
@@ -66,3 +78,6 @@ export default function Gallery() {
     </div>
   );
 }
+
+// Reuse getSession from _app.js
+import { getSession } from './_app';
