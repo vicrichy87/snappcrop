@@ -206,26 +206,41 @@ export default function Home() {
           {/* decorative blobs */}
           <div className="absolute -left-8 -top-8 w-48 h-48 bg-sky-200/60 rounded-full blur-3xl animate-blob"></div>
           <div className="absolute -right-8 -bottom-8 w-56 h-56 bg-indigo-200/40 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
-      
-          {/* phone mockup */}              
+                            
           {/* Hero Animation */}
-          <div className="relative w-[260px] sm:w-[320px] md:w-[360px] h-[380px] bg-white rounded-3xl shadow-xl flex items-center justify-center border border-sky-100 overflow-hidden">
+          <div className="relative w-[260px] sm:w-[320px] md:w-[360px] h-[380px] bg-white rounded-3xl shadow-xl border border-sky-100 overflow-hidden">
+            {/* Base image (selfie) */}
+            <Image
+              src="/demo-selfie.png"
+              alt="Snappcrop Selfie Preview"
+              fill
+              className="object-cover"
+              priority
+            />
+          
+            {/* Lottie gradient sweep overlay */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ duration: 1 }}
-              className="absolute inset-0 flex items-center justify-center"
+              className="absolute inset-0 flex items-center justify-center bg-transparent"
             >
-              <Lottie animationData={aiTransform} loop={true} autoplay={true} className="w-full h-full" />
+              <Lottie
+                animationData={aiTransform}
+                loop={true}
+                autoplay={true}
+                className="w-full h-full opacity-90 mix-blend-overlay"
+              />
             </motion.div>
           
-            {/* Subtle Glass Overlay */}
+            {/* Glass caption overlay */}
             <div className="absolute bottom-0 w-full text-center bg-white/70 backdrop-blur-md py-3 border-t border-sky-100">
               <p className="text-sm text-slate-600 font-medium">
                 AI-powered transformation in seconds
               </p>
             </div>
           </div>
+
         </motion.div>
       </section>
 
