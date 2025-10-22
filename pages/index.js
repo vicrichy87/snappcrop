@@ -7,6 +7,7 @@ import { FaCamera, FaCloudUploadAlt, FaMagic, FaDownload } from "react-icons/fa"
 import logo from "../public/logo.png";
 import { supabase } from "../lib/supabase";
 import { getSession } from "./_app";
+import '../styles/globals.css';
 
 /**
  * Snappcrop - Elegant Home + Photo Cropper
