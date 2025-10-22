@@ -116,6 +116,14 @@ export default function Home() {
     }
   };
 
+  const [showPassport, setShowPassport] = useState(false);
+
+  // Auto toggle every 4 seconds
+  useEffect(() => {
+    const interval = setInterval(() => setShowPassport((prev) => !prev), 4000);
+    return () => clearInterval(interval);
+  }, []);
+
   const fadeUp = {
     hidden: { opacity: 0, y: 30 },
     show: { opacity: 1, y: 0, transition: { duration: 0.8 } },
@@ -209,7 +217,14 @@ export default function Home() {
                             
           {/* Hero Animation */}
           <div className="relative w-[260px] sm:w-[320px] md:w-[360px] h-[380px] bg-white rounded-3xl shadow-xl border border-sky-100 overflow-hidden">
-            {/* Base image (selfie) */}
+        
+          {/* Base images crossfade */}
+          <motion.div
+            className="absolute inset-0"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: showPassport ? 0 : 1 }}
+            transition={{ duration: 1.2, ease: "easeInOut" }}
+          >
             <Image
               src="/demo-selfie.png"
               alt="Snappcrop Selfie Preview"
@@ -217,32 +232,42 @@ export default function Home() {
               className="object-cover"
               priority
             />
-          
-            {/* Lottie gradient sweep overlay */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 1 }}
-              className="absolute inset-0 flex items-center justify-center bg-transparent"
-            >
-              <Lottie
-                animationData={aiTransform}
-                loop={true}
-                autoplay={true}
-                className="w-full h-full opacity-90 mix-blend-overlay"
-              />
-            </motion.div>
-          
-            {/* Glass caption overlay */}
-            <div className="absolute bottom-0 w-full text-center bg-white/70 backdrop-blur-md py-3 border-t border-sky-100">
-              <p className="text-sm text-slate-600 font-medium">
-                AI-powered transformation in seconds
-              </p>
-            </div>
+          </motion.div>
+        
+          <motion.div
+            className="absolute inset-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: showPassport ? 1 : 0 }}
+            transition={{ duration: 1.2, ease: "easeInOut" }}
+          >
+            <Image
+              src="/demo-passport.png"
+              alt="Snappcrop Passport Result"
+              fill
+              className="object-cover"
+              priority
+            />
+          </motion.div>
+        
+          {/* Lottie overlay */}
+          <div className="absolute inset-0 flex items-center justify-center bg-transparent">
+            <Lottie
+              animationData={aiTransform}
+              loop={true}
+              autoplay={true}
+              className="w-full h-full opacity-85 mix-blend-overlay"
+            />
           </div>
-
-        </motion.div>
-      </section>
+        
+          {/* Bottom glass caption */}
+          <div className="absolute bottom-0 w-full text-center bg-white/70 backdrop-blur-md py-3 border-t border-sky-100">
+            <p className="text-sm text-slate-600 font-medium">
+              AI-powered transformation in seconds
+            </p>
+          </div>
+        </div>
+      </motion.div>
+    </section>
 
       {/* Upload & Crop Section */}
       <motion.section
