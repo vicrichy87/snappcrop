@@ -166,9 +166,16 @@ export default function Home() {
       {/* NAV / HERO */}
       <section className="w-full max-w-6xl px-6 lg:px-12 py-10 flex flex-col md:flex-row items-center justify-between gap-8">
         <div className="flex items-center gap-4">
-          <div className="relative w-20 h-20 rounded-3xl overflow-hidden shadow-xl">
-            <Image src={logo} alt="Snappcrop" quality={90} fill style={{ objectFit: "cover" }} />
-          </div>
+        <div className="flex items-center justify-center">
+          <Image
+            src={logo}
+            alt="Snappcrop Logo"
+            width={80}
+            height={80}
+            className="rounded-2xl shadow-md object-contain"
+            priority
+          />
+        </div>
           <div>
             <h1 className="text-3xl md:text-4xl font-extrabold text-sky-800 leading-tight">
               Snappcrop — Instant passport photos from your selfie
