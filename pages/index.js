@@ -182,8 +182,7 @@ export default function Home() {
             </h1>
             <p className="mt-2 text-slate-600 max-w-xl">
               Smart crop, background removal, and format-ready exports for passports, visas and ID cards — all in seconds.
-            </p>
-            <h1 className="text-4xl font-bold text-red-500">Tailwind is working!</h1>  
+            </p>             
             <div className="mt-4 flex gap-3">
               <button
                 onClick={triggerFile}
