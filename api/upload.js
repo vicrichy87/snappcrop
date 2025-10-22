@@ -2,7 +2,6 @@ import { supabase } from '../../lib/supabase';
 import formidable from 'formidable';
 import fs from 'fs';
 
-// Disable Next.js body parser to handle multipart/form-data
 export const config = {
   api: {
     bodyParser: false,
@@ -17,7 +16,7 @@ export default async function handler(req, res) {
   const form = formidable({ multiples: false });
 
   try {
-    const { fields, files } = await new Promise((resolve, reject) => {
+    const { files } = await new Promise((resolve, reject) => {
       form.parse(req, (err, fields, files) => {
         if (err) reject(err);
         resolve({ fields, files });
@@ -29,11 +28,14 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    // Read file buffer
+    const session = await supabase.auth.getSession();
+    if (!session.data.session) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
     const fileBuffer = fs.readFileSync(file.filepath);
     const filename = `passport-${Date.now()}-${file.originalFilename || 'photo.jpg'}`;
 
-    // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from('passport-photos')
       .upload(filename, fileBuffer, {
@@ -44,16 +46,14 @@ export default async function handler(req, res) {
       throw uploadError;
     }
 
-    // Save metadata to Supabase Database
     const { error: dbError } = await supabase
       .from('photos')
-      .insert([{ filename }]);
+      .insert([{ user_id: session.data.session.user.id, filename }]);
 
     if (dbError) {
       throw dbError;
     }
 
-    // Get public URL
     const { data } = supabase.storage
       .from('passport-photos')
       .getPublicUrl(filename);
