@@ -274,7 +274,7 @@ export default function Home() {
               Original Selfie
             </div>
             <Image
-              src="/demo-selfie.jpg"
+              src="/demo-selfie.png"
               alt="Before"
               fill
               className="object-cover opacity-90"
@@ -291,7 +291,7 @@ export default function Home() {
               Passport Result
             </div>
             <Image
-              src="/demo-passport.jpg"
+              src="/demo-passport.png"
               alt="After"
               fill
               className="object-cover opacity-90"
