@@ -127,60 +127,93 @@ export default function Home() {
         <div className="absolute bottom-0 right-0 w-[120%] h-[120%] bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-indigo-200 via-transparent to-transparent opacity-40 animate-wave-fast"></div>
       </div>
 
-      {/* Hero Section */}
-      <section className="text-center pt-32 pb-24 relative z-10">
+      {/* NAV / HERO */}
+      <section className="w-full max-w-6xl px-6 lg:px-12 py-10 flex flex-col md:flex-row items-center justify-between gap-10">
+        {/* Left side — Logo and text */}
+        <div className="flex flex-col items-start gap-5 text-left max-w-2xl">
+          {/* Enlarged logo with glow */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring", stiffness: 90, damping: 10 }}
+            className="flex items-center gap-4"
+          >
+            <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-3xl overflow-hidden shadow-2xl border border-sky-100 hover:scale-105 hover:shadow-sky-200 transition duration-300 ease-in-out">
+              <Image
+                src={logo}
+                alt="Snappcrop Logo"
+                fill
+                className="object-contain brightness-110"
+                priority
+              />
+            </div>
+            <h1 className="text-5xl sm:text-6xl font-extrabold text-sky-800 tracking-tight">
+              Snappcrop
+            </h1>
+          </motion.div>
+      
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.7 }}
+            className="text-lg sm:text-xl text-slate-600 leading-relaxed"
+          >
+            Transform your selfie into a perfect passport photo — smart cropping, background cleanup, and official dimensions in seconds.
+          </motion.p>
+      
+          {/* Action Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.7 }}
+            className="flex flex-wrap gap-4 mt-4"
+          >
+            <button
+              onClick={triggerFile}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white font-semibold rounded-full shadow-md transition-all transform hover:-translate-y-0.5"
+            >
+              <FaCloudUploadAlt /> Try It Now
+            </button>
+      
+            <a
+              href="/about"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-sky-700 border border-sky-200 rounded-full font-semibold shadow-sm hover:shadow-md hover:bg-sky-50 transition-all"
+            >
+              About
+            </a>
+      
+            <a
+              href="/gallery"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-sky-700 border border-sky-200 rounded-full font-semibold shadow-sm hover:shadow-md hover:bg-sky-50 transition-all"
+            >
+              Gallery
+            </a>
+          </motion.div>
+        </div>
+      
+        {/* Right side — animated hero visual */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
-          className="flex justify-center mb-6"
+          className="relative w-full max-w-[420px] aspect-[16/10] bg-gradient-to-br from-white to-sky-50 rounded-3xl shadow-2xl border border-sky-100 overflow-hidden flex items-center justify-center"
         >
-          <div className="relative">
-            <div className="absolute inset-0 bg-blue-400 rounded-3xl blur-3xl opacity-40 animate-pulse-slow"></div>
-            <Image
-              src={logo}
-              alt="Snappcrop Logo"
-              width={100}
-              height={100}
-              className="relative rounded-3xl shadow-2xl"
-              priority
-            />
+          {/* decorative blobs */}
+          <div className="absolute -left-8 -top-8 w-48 h-48 bg-sky-200/60 rounded-full blur-3xl animate-blob"></div>
+          <div className="absolute -right-8 -bottom-8 w-56 h-56 bg-indigo-200/40 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
+      
+          {/* phone mockup */}
+          <div className="relative w-56 h-[370px] bg-white rounded-2xl shadow-inner flex flex-col items-center justify-start p-4 border border-sky-100">
+            <div className="w-full h-44 rounded-lg bg-slate-100/60 border border-slate-100 flex items-center justify-center overflow-hidden">
+              <div className="text-slate-400 text-sm">Upload a selfie to preview</div>
+            </div>
+            <div className="mt-4 w-full text-center">
+              <div className="text-sm text-slate-500">1 selfie → 1 passport photo</div>
+              <div className="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-full bg-sky-50 border border-sky-100 text-sky-700 text-xs font-medium">
+                <FaMagic /> Auto Background Removal
+              </div>
+            </div>
           </div>
-        </motion.div>
-
-        <motion.h1
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9 }}
-          className="text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-sky-600 via-indigo-600 to-purple-600 text-transparent bg-clip-text animate-gradient"
-        >
-          Snap. Crop. Perfect.
-        </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.9 }}
-          className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto"
-        >
-          Instantly turn your selfie into a professional passport photo.
-          Powered by AI — ready in seconds.
-        </motion.p>
-
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          className="mt-8 inline-flex items-center gap-3 bg-sky-600 hover:bg-sky-700 text-white font-semibold px-6 py-3 rounded-full shadow-lg cursor-pointer transition"
-          onClick={triggerFile}
-        >
-          <FaCamera className="text-2xl animate-pulse" />
-          <span>Try Snappcrop Now</span>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            className="hidden"
-          />
         </motion.div>
       </section>
 
