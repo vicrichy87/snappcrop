@@ -260,6 +260,49 @@ export default function Home() {
         </motion.div>
       </motion.section>
 
+      {/* Live Demo Section */}
+      <section className="relative z-10 text-center pb-32">
+        <h2 className="text-4xl font-extrabold text-sky-800 mb-10">
+          See Snappcrop in Action
+        </h2>
+        <div className="flex flex-col md:flex-row items-center justify-center gap-12">
+          <motion.div
+            whileHover={{ scale: 1.03 }}
+            className="relative w-64 h-[420px] bg-gradient-to-br from-white via-blue-50 to-sky-100 border border-blue-100 rounded-3xl shadow-xl overflow-hidden"
+          >
+            <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">
+              Original Selfie
+            </div>
+            <Image
+              src="/demo-selfie.jpg"
+              alt="Before"
+              fill
+              className="object-cover opacity-90"
+            />
+          </motion.div>
+
+          <FaMagic className="text-5xl text-sky-500 animate-pulse hidden md:block" />
+
+          <motion.div
+            whileHover={{ scale: 1.03 }}
+            className="relative w-64 h-[420px] bg-gradient-to-br from-white via-green-50 to-emerald-100 border border-green-100 rounded-3xl shadow-xl overflow-hidden"
+          >
+            <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">
+              Passport Result
+            </div>
+            <Image
+              src="/demo-passport.jpg"
+              alt="After"
+              fill
+              className="object-cover opacity-90"
+            />
+          </motion.div>
+        </div>
+        <p className="mt-6 text-gray-600 text-sm">
+          Upload your photo and watch Snappcrop handle everything automatically.
+        </p>
+      </section>
+
       <footer className="text-center pb-10 text-gray-500 text-sm">
         © {new Date().getFullYear()} Snappcrop — Speak. Snap. Smile.
       </footer>
