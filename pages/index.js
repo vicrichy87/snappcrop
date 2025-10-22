@@ -368,7 +368,7 @@ export default function Home() {
             className="absolute inset-0"
           >
             <Image
-              src="/demo-selfie.png"
+              src="/demo-selfie2.png"
               alt="Before - Selfie"
               fill
               className="object-cover brightness-95 transition-all duration-[3000ms] ease-in-out animate-fadeIn"
@@ -388,7 +388,7 @@ export default function Home() {
             className="absolute inset-0"
           >
             <Image
-              src="/demo-passport.png"
+              src="/demo-passport2.png"
               alt="After - Passport Photo"
               fill
               className="object-cover brightness-100 transition-all duration-700 ease-in-out"
