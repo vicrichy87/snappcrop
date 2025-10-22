@@ -1,4 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 body {
+  @apply bg-gradient-to-b from-blue-50 via-white to-blue-100 text-gray-700;
   font-family: Arial, sans-serif;
   margin: 0;
   padding: 0;
@@ -211,4 +216,12 @@ ul {
   .galleryGrid {
     grid-template-columns: 1fr;
   }
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-gradient-to-b from-blue-50 via-white to-blue-100 text-gray-700;
 }
