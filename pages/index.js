@@ -59,12 +59,13 @@ export default function Home() {
     let mounted = true;
     const loadFaceApi = async () => {
       try {
-        const faceapiModule = await import("face-api.js");
-        const faceapi = faceapiModule.default ?? faceapiModule;
+        const faceapi = await import("face-api.js/dist/face-api.esm.js"); // ✅ import direct ESM build
+  
         await Promise.all([
           faceapi.nets.ssdMobilenetv1.loadFromUri("/models"),
           faceapi.nets.faceLandmark68Net.loadFromUri("/models"),
         ]);
+  
         if (mounted) setFaceApi(faceapi);
         setMessage("✅ AI face models loaded successfully.");
       } catch (error) {
