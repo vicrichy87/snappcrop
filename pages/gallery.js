@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import Image from "next/image";
 import logo from "../public/logo.png";
 import { supabase } from "../lib/supabase";
-import { getSession } from "../lib/session"; // ✅ Only one import — from lib/session
+import { getSession } from "../lib/session"; 
 
 export default function Gallery() {
   const [photos, setPhotos] = useState([]);
