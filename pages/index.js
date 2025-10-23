@@ -51,47 +51,52 @@ export default function Home() {
   const imageRef = useRef(null);
 
   useEffect(() => {
-    let humanInstance;
+    let mounted = true;
   
-    async function loadHuman() {
-      // ✅ Only load in browser
-      if (typeof window === "undefined") return;
+    const loadHuman = async () => {
+      try {
+        if (typeof window === "undefined") return;
   
-      const [{ default: Human }, tf] = await Promise.all([
-        import("@vladmandic/human"), // ✅ fixed — no dist path needed
-        import("@tensorflow/tfjs"),
-      ]);
+        // ✅ Import Human and TensorFlow only in the browser
+        const [{ default: Human }, tf] = await Promise.all([
+          import("@vladmandic/human"),
+          import("@tensorflow/tfjs"),
+        ]);
   
-      // ✅ Attach tf to window for backend use
-      window.tf = tf;
+        const human = new Human({
+          backend: "webgl",
+          cacheModels: true,
+          debug: false,
+          modelBasePath: "/models/", // ✅ local path
+          face: {
+            enabled: true,
+            detector: { rotation: true, maxDetected: 1 },
+            mesh: { enabled: true },
+            iris: { enabled: true },
+            emotion: { enabled: true },
+          },
+          body: { enabled: false },
+          hand: { enabled: false },
+          gesture: { enabled: false },
+        });
   
-      const config = {
-        backend: "webgl",
-        modelBasePath: "https://vladmandic.github.io/human/models/", // ✅ official CDN path
-        face: {
-          enabled: true,
-          detector: { modelPath: "https://vladmandic.github.io/human/models/blazeface.json" },
-          mesh: { modelPath: "https://vladmandic.github.io/human/models/facemesh.json" },
-          emotion: { modelPath: "https://vladmandic.github.io/human/models/emotion.json" },
-          iris: { modelPath: "https://vladmandic.github.io/human/models/iris.json" },
-          description: { modelPath: "https://vladmandic.github.io/human/models/faceres.json" },
-        },
-        body: { enabled: false },
-        hand: { enabled: false },
-        object: { enabled: false },
-      };
+        await human.load();
+        console.log("✅ Human.js models loaded successfully");
   
-      humanInstance = new Human(config);
-      await humanInstance.load();
-      console.log("✅ Human.js browser models loaded");
-  
-      window.human = humanInstance;
-    }
+        if (mounted) {
+          setMessage("✅ Face detection models loaded successfully.");
+          // If you want to save Human instance for later:
+          window.human = human;
+        }
+      } catch (error) {
+        console.error("❌ Human.js load error:", error);
+        setMessage(`⚠️ Failed to load face detection models: ${error.message}`);
+      }
+    };
   
     loadHuman();
-  
     return () => {
-      humanInstance = null;
+      mounted = false;
     };
   }, []);
 
