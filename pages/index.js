@@ -14,6 +14,7 @@ import { supabase } from "../lib/supabase";
 import { getSession } from "../lib/session";
 import Lottie from "lottie-react";
 import aiTransform from "../public/ai-transform.json";
+import Human from 'human';
 
 /**
  * Snappcrop - Full Feature Home Page
@@ -50,64 +51,16 @@ export default function Home() {
 
   // ---------------- Auto Demo Animation ----------------
   useEffect(() => {
-    const interval = setInterval(() => setShowPassport((prev) => !prev), 4000);
-    return () => clearInterval(interval);
+    human = new Human({
+      modelBasePath: 'https://vladmandic.github.io/human/models/',
+      face: { enabled: true },
+    });
+  
+    (async () => {
+      await human.load();
+      setMessage('✅ Face detection models loaded (Human.js)');
+    })();
   }, []);
-  
-    // Load TensorFlow + Face API dynamically (Next.js 13–15 fix)
-    useEffect(() => {
-    let mounted = true;
-  
-    const loadFaceApi = async () => {
-      try {
-        if (typeof window === "undefined") return;
-  
-        // ✅ Load TensorFlow.js first and expose globally (required by face-api)
-        if (!window.tf) {
-          const tf = await import("@tensorflow/tfjs");
-          window.tf = tf;
-        }
-  
-        let faceApiModule;
-  
-        try {
-          // ✅ Try to load local public/libs version (for Vercel)
-          faceApiModule = await import(
-            /* webpackIgnore: true */
-            "/libs/face-api.min.js"
-          );
-        } catch (err) {
-          console.warn("⚠️ Local libs version not found, falling back to node_modules", err);
-  
-          // ✅ Fallback: load from node_modules (for local dev)
-          faceApiModule = await import("face-api.js");
-        }
-  
-        const faceapi = faceApiModule.default || faceApiModule;
-  
-        // ✅ Load models from /public/models
-        await Promise.all([
-          faceapi.nets.ssdMobilenetv1.loadFromUri("/models"),
-          faceapi.nets.faceLandmark68Net.loadFromUri("/models"),
-        ]);
-  
-        if (mounted) {
-          setFaceApi(faceapi);
-          setMessage("✅ Face detection models loaded successfully.");
-        }
-      } catch (error) {
-        console.error("❌ Face API load error:", error);
-        setMessage(`⚠️ Failed to load face detection models: ${error.message}`);
-      }
-    };
-  
-    loadFaceApi();
-  
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
 
   // ---------------- Helpers ----------------
   const fadeUp = {
@@ -154,64 +107,26 @@ export default function Home() {
 
   // ---------------- File Upload + Face Detection ----------------
   const handleFileChange = async (e) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    setMessage("");
-    setIsBgRemoved(false);
-    setDownloadUrl(null);
-    setFile(f);
-
+    const file = e.target.files?.[0];
+    if (!file) return;
     const reader = new FileReader();
-    reader.onload = async (event) => {
-      setPreviewUrl(event.target.result);
-      if (!faceApi) {
-        setMessage("⚠️ Face models not yet loaded. Please wait...");
-        return;
-      }
-      try {
-        if (!faceApi) {
-          setMessage("⚠️ Face detection models not loaded yet.");
-          return;
-        }
-      
-        const img = new Image();
-        img.src = e.target.result;
-        await new Promise((resolve) => (img.onload = resolve));
-      
-        const detection = await faceApi
-          .detectSingleFace(img, new faceApi.SsdMobilenetv1Options())
-          .withFaceLandmarks();
-      
-        if (detection) {
-          const { box } = detection.detection;
-          const padding = box.width * 0.5;
-          setCrop({
-            x: box.x - padding / 2,
-            y: box.y - padding / 2,
-          });
-          setZoom(600 / (box.width + padding));
-      
-          const landmarks = detection.landmarks.positions;
-          const isNeutral = checkNeutralExpression(landmarks);
-          const hasShadows = checkShadows(img, box);
-          const compliant = isNeutral && !hasShadows;
-          setIsCompliant(compliant);
-          setMessage(
-            compliant
-              ? "✅ Face detected and photo complies with standards."
-              : "⚠️ Face detected but expression or lighting might not comply."
-          );
-        } else {
-          setMessage("❌ No face detected. Please adjust manually.");
-        }
-      } catch (error) {
-        console.error("Face detection error:", error);
-        setMessage(`⚠️ Face detection failed: ${error.message}`);
+    reader.onload = async () => {
+      setPreviewUrl(reader.result);
+      const img = new Image();
+      img.src = reader.result;
+      await new Promise((r) => (img.onload = r));
+      const result = await human.detect(img);
+      if (result.face.length > 0) {
+        const face = result.face[0];
+        console.log(face.landmarks);
+        setMessage('✅ Face detected and landmarks found.');
+      } else {
+        setMessage('⚠️ No face detected.');
       }
     };
-    reader.readAsDataURL(f);
+    reader.readAsDataURL(file);
   };
-
+  
   const triggerFile = () => inputRef.current?.click();
 
   // ---------------- Background Removal ----------------
