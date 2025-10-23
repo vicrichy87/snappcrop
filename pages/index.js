@@ -1,3 +1,4 @@
+// pages/index.js
 import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import Cropper from "react-easy-crop";
@@ -12,60 +13,115 @@ import logo from "../public/logo.png";
 import { supabase } from "../lib/supabase";
 import { getSession } from "./_app";
 import Lottie from "lottie-react";
-// Placeholder for ai-transform.json; replace with your file
-import aiTransform from "../public/ai-transform.json"; // Add this file with a Lottie animation (e.g., from lottiefiles.com)
+import aiTransform from "../public/ai-transform.json";
+
+/**
+ * Snappcrop - Full Feature Home Page
+ * ------------------------------------------------------------
+ * - Hero Section with animated gradient + Lottie
+ * - Smart upload + face detection + compliance checks
+ * - Background removal and Supabase upload
+ * - Animated demo (selfie → passport) sections
+ * - Fully responsive and mobile optimized
+ */
 
 export default function Home() {
+  // ---------------- State Management ----------------
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [downloadUrl, setDownloadUrl] = useState(null);
   const [isBgRemoved, setIsBgRemoved] = useState(false);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isCompliant, setIsCompliant] = useState(null);
+  const [faceApi, setFaceApi] = useState(null);
+
+  // crop state
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
-  const [isCompliant, setIsCompliant] = useState(null);
+
+  // UI + animation states
+  const [showPassport, setShowPassport] = useState(false);
+
+  // refs
   const inputRef = useRef(null);
   const imageRef = useRef(null);
 
-  // Auto toggle every 4 seconds
+  // ---------------- Auto Demo Animation ----------------
   useEffect(() => {
     const interval = setInterval(() => setShowPassport((prev) => !prev), 4000);
     return () => clearInterval(interval);
   }, []);
 
+  // ---------------- Load Face API ----------------
+  useEffect(() => {
+    let mounted = true;
+    const loadFaceApi = async () => {
+      try {
+        const faceapiModule = await import("face-api.js");
+        const faceapi = faceapiModule.default ?? faceapiModule;
+        await Promise.all([
+          faceapi.nets.ssdMobilenetv1.loadFromUri("/models"),
+          faceapi.nets.faceLandmark68Net.loadFromUri("/models"),
+        ]);
+        if (mounted) setFaceApi(faceapi);
+        setMessage("✅ AI face models loaded successfully.");
+      } catch (error) {
+        console.error("Face API load error:", error);
+        setMessage(`⚠️ Failed to load AI models: ${error.message}`);
+      }
+    };
+    if (typeof window !== "undefined") loadFaceApi();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // ---------------- Helpers ----------------
   const fadeUp = {
     hidden: { opacity: 0, y: 30 },
     show: { opacity: 1, y: 0, transition: { duration: 0.8 } },
   };
 
-  // Load face-api.js dynamically on client side
-  useEffect(() => {
-    let isMounted = true;
-    const loadFaceApi = async () => {
-      try {
-        const faceapi = await import("face-api.js");
-        await faceapi.nets.ssdMobilenetv1.loadFromUri("/models");
-        await faceapi.nets.faceLandmark68Net.loadFromUri("/models");
-        if (isMounted) setMessage("Models loaded");
-      } catch (error) {
-        if (isMounted) {
-          setMessage(`Failed to load face detection models. (Error: ${error.message})`);
-          console.error("Face API error:", error);
-        }
-      }
-    };
-    if (typeof window !== "undefined") loadFaceApi();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
   const onCropComplete = useCallback((_, areaPixels) => {
     setCroppedAreaPixels(areaPixels);
   }, []);
 
+  const checkNeutralExpression = (landmarks) => {
+    const upperLip = landmarks[50];
+    const lowerLip = landmarks[58];
+    const mouthOpen = lowerLip.y - upperLip.y > 10;
+    return !mouthOpen;
+  };
+
+  const checkShadows = (img, box) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = box.width;
+    canvas.height = box.height;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(
+      img,
+      box.x,
+      box.y,
+      box.width,
+      box.height,
+      0,
+      0,
+      box.width,
+      box.height
+    );
+    const imageData = ctx.getImageData(0, 0, box.width, box.height);
+    const data = imageData.data;
+    let darkPixels = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+      if (brightness < 50) darkPixels++;
+    }
+    return darkPixels / (box.width * box.height) > 0.1;
+  };
+
+  // ---------------- File Upload + Face Detection ----------------
   const handleFileChange = async (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -73,37 +129,51 @@ export default function Home() {
     setIsBgRemoved(false);
     setDownloadUrl(null);
     setFile(f);
+
     const reader = new FileReader();
-    reader.onload = async (e) => {
-      setPreviewUrl(e.target.result);
+    reader.onload = async (event) => {
+      setPreviewUrl(event.target.result);
+      if (!faceApi) {
+        setMessage("⚠️ Face models not yet loaded. Please wait...");
+        return;
+      }
+
       try {
-        const faceapi = await import("face-api.js");
         const img = new Image();
-        img.src = e.target.result;
-        await new Promise((resolve) => (img.onload = resolve)); // Wait for image load
+        img.src = event.target.result;
+        await new Promise((resolve) => (img.onload = resolve));
         imageRef.current = img;
-        const detections = await faceapi.detectSingleFace(img).withFaceLandmarks();
-        if (detections) {
-          const { box } = detections.detection;
+
+        const detection = await faceApi
+          .detectSingleFace(img)
+          .withFaceLandmarks();
+
+        if (detection) {
+          const { box } = detection.detection;
           const padding = box.width * 0.5;
           setCrop({
             x: box.x - padding / 2,
             y: box.y - padding / 2,
           });
           setZoom(600 / (box.width + padding));
-          const landmarks = detections.landmarks.positions;
+
+          const landmarks = detection.landmarks.positions;
           const isNeutral = checkNeutralExpression(landmarks);
           const hasShadows = checkShadows(img, box);
-          setIsCompliant(isNeutral && !hasShadows);
+          const compliant = isNeutral && !hasShadows;
+          setIsCompliant(compliant);
+
           setMessage(
-            `Face detected, crop adjusted. ${isCompliant ? "Image complies." : "Warning: Non-neutral expression or shadows detected."}`
+            compliant
+              ? "✅ Face detected and photo complies with standards."
+              : "⚠️ Face detected but lighting/expression might not comply."
           );
         } else {
-          setMessage("No face detected. Please adjust manually.");
+          setMessage("❌ No face detected. Please adjust manually.");
         }
       } catch (error) {
         console.error("Face detection error:", error);
-        setMessage(`Failed to process image. (Error: ${error.message})`);
+        setMessage(`⚠️ Failed to process image. (${error.message})`);
       }
     };
     reader.readAsDataURL(f);
@@ -111,6 +181,7 @@ export default function Home() {
 
   const triggerFile = () => inputRef.current?.click();
 
+  // ---------------- Background Removal ----------------
   const handleRemoveBackground = async () => {
     if (!file || !previewUrl)
       return setMessage("Please upload a selfie first.");
@@ -119,29 +190,21 @@ export default function Home() {
     try {
       const form = new FormData();
       form.append("file", file);
-      const res = await fetch("/api/remove-bg", { method: "POST", body: form }).catch(err => {
-        console.error("Fetch error:", err);
-        throw err;
-      });
-      console.log("Fetch response:", { status: res.status, ok: res.ok });
-      const text = await res.text();
-      console.log("Raw response:", text);
-      const data = text ? JSON.parse(text) : {};
-      console.log("Parsed data:", data);
-      if (!res.ok) {
-        throw new Error(data.error || `Error ${res.status}`);
-      }
+      const res = await fetch("/api/remove-bg", { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || "Error");
       setPreviewUrl(data.url);
       setIsBgRemoved(true);
-      setMessage("Background removed successfully!");
+      setMessage("✅ Background removed successfully!");
     } catch (error) {
-      setMessage(`Failed to remove background. Try again. (Error: ${error.message})`);
-      console.error("Background removal error:", error, { stack: error.stack });
+      console.error("Background removal error:", error);
+      setMessage(`⚠️ Failed to remove background. (${error.message})`);
     } finally {
       setLoading(false);
     }
   };
-  
+
+  // ---------------- Crop & Save ----------------
   const handleCropAndSave = async () => {
     if (!croppedAreaPixels || !previewUrl)
       return setMessage("Please crop your image first.");
@@ -184,60 +247,44 @@ export default function Home() {
       });
 
       setDownloadUrl(data.url);
-      setMessage("Saved successfully!");
+      setMessage("✅ Saved successfully!");
     } catch (error) {
-      setMessage("Error saving image.");
-      console.error(error);
+      console.error("Save error:", error);
+      setMessage("⚠️ Error saving image.");
     } finally {
       setLoading(false);
     }
   };
 
-  const checkNeutralExpression = (landmarks) => {
-    const upperLip = landmarks[50];
-    const lowerLip = landmarks[58];
-    const mouthOpen = lowerLip.y - upperLip.y > 10;
-    return !mouthOpen;
-  };
-
-  const checkShadows = (img, box) => {
-    const canvas = document.createElement("canvas");
-    canvas.width = box.width;
-    canvas.height = box.height;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, box.x, box.y, box.width, box.height, 0, 0, box.width, box.height);
-    const imageData = ctx.getImageData(0, 0, box.width, box.height);
-    const data = imageData.data;
-    let darkPixels = 0;
-    for (let i = 0; i < data.length; i += 4) {
-      const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
-      if (brightness < 50) darkPixels++;
-    }
-    return (darkPixels / (box.width * box.height)) > 0.1;
-  };
-
-  const [showPassport, setShowPassport] = useState(false);
-
+  // ---------------- UI ----------------
   return (
     <main className="relative min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-100 overflow-hidden">
-      {/* Animated gradient waves */}
+      {/* Background Animations */}
       <div className="absolute inset-0 overflow-hidden -z-10">
         <div className="absolute top-0 left-0 w-[120%] h-[120%] bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-blue-200 via-transparent to-transparent opacity-40 animate-wave-slow"></div>
         <div className="absolute bottom-0 right-0 w-[120%] h-[120%] bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-indigo-200 via-transparent to-transparent opacity-40 animate-wave-fast"></div>
       </div>
 
-      {/* NAV / HERO */}
-      <section className="w-full max-w-6xl px-6 lg:px-12 py-10 flex flex-col md:flex-row items-center justify-between gap-10">
-        {/* Left side — Logo and text */}
+      {/* Hidden input */}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
+      {/* ---------------- Hero Section ---------------- */}
+      <section className="w-full max-w-6xl px-6 lg:px-12 py-10 flex flex-col md:flex-row items-center justify-between gap-10 mx-auto">
+        {/* Left side */}
         <div className="flex flex-col items-start gap-5 text-left max-w-2xl">
-          {/* Enlarged logo with glow */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ type: "spring", stiffness: 90, damping: 10 }}
             className="flex items-center gap-4"
           >
-            <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-3xl overflow-hidden shadow-2xl border border-sky-100 hover:scale-105 hover:shadow-sky-200 transition duration-300 ease-in-out">
+            <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-3xl overflow-hidden shadow-2xl border border-sky-100 hover:scale-105 transition duration-300 ease-in-out">
               <Image
                 src={logo}
                 alt="Snappcrop Logo"
@@ -261,84 +308,72 @@ export default function Home() {
             background cleanup, and official dimensions in seconds.
           </motion.p>
 
-          {/* Action Buttons */}
+          {/* Buttons */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.7 }}
-            className="flex flex-col sm:flex-row flex-wrap items-center justify-start sm:justify-start gap-3 sm:gap-4 mt-6 w-full"
+            className="flex flex-col sm:flex-row flex-wrap items-center gap-3 mt-6 w-full"
           >
             <button
               onClick={triggerFile}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 w-full sm:w-auto bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white font-semibold rounded-full shadow-md transition-all transform hover:-translate-y-0.5 text-sm sm:text-base"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 w-full sm:w-auto bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white font-semibold rounded-full shadow-md transition text-sm sm:text-base"
             >
               <FaCloudUploadAlt /> Try It Now
             </button>
             <a
               href="/about"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 w-full sm:w-auto bg-white text-sky-700 border border-sky-200 rounded-full font-semibold shadow-sm hover:shadow-md hover:bg-sky-50 transition-all text-sm sm:text-base"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 w-full sm:w-auto bg-white text-sky-700 border border-sky-200 rounded-full font-semibold shadow-sm hover:shadow-md hover:bg-sky-50 transition text-sm sm:text-base"
             >
               About
             </a>
             <a
               href="/gallery"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 w-full sm:w-auto bg-white text-sky-700 border border-sky-200 rounded-full font-semibold shadow-sm hover:shadow-md hover:bg-sky-50 transition-all text-sm sm:text-base"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 w-full sm:w-auto bg-white text-sky-700 border border-sky-200 rounded-full font-semibold shadow-sm hover:shadow-md hover:bg-sky-50 transition text-sm sm:text-base"
             >
               Gallery
             </a>
           </motion.div>
         </div>
 
-        {/* Right side — animated hero visual */}
+        {/* Right side - animated hero */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
           className="relative w-full max-w-[420px] aspect-[16/10] bg-gradient-to-br from-white to-sky-50 rounded-3xl shadow-2xl border border-sky-100 overflow-hidden flex items-center justify-center"
         >
+          {/* Blobs */}
           <div className="absolute -left-8 -top-8 w-48 h-48 bg-sky-200/60 rounded-full blur-3xl animate-blob"></div>
           <div className="absolute -right-8 -bottom-8 w-56 h-56 bg-indigo-200/40 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
 
+          {/* Crossfade Images + Lottie */}
           <div className="relative w-[260px] sm:w-[320px] md:w-[360px] h-[380px] bg-white rounded-3xl shadow-xl border border-sky-100 overflow-hidden">
             <motion.div
               className="absolute inset-0"
               initial={{ opacity: 1 }}
               animate={{ opacity: showPassport ? 0 : 1 }}
-              transition={{ duration: 1.2, ease: "easeInOut" }}
+              transition={{ duration: 1.2 }}
             >
-              <Image
-                src="/demo-selfie.png"
-                alt="Snappcrop Selfie Preview"
-                fill
-                className="object-cover"
-                priority
-              />
+              <Image src="/demo-selfie.png" alt="Selfie" fill className="object-cover" />
             </motion.div>
-
             <motion.div
               className="absolute inset-0"
               initial={{ opacity: 0 }}
               animate={{ opacity: showPassport ? 1 : 0 }}
-              transition={{ duration: 1.2, ease: "easeInOut" }}
+              transition={{ duration: 1.2 }}
             >
-              <Image
-                src="/demo-passport.png"
-                alt="Snappcrop Passport Result"
-                fill
-                className="object-cover"
-                priority
-              />
+              <Image src="/demo-passport.png" alt="Passport" fill className="object-cover" />
             </motion.div>
 
             <div className="absolute inset-0 flex items-center justify-center bg-transparent">
               <Lottie
                 animationData={aiTransform}
-                loop={true}
-                autoplay={true}
+                loop
+                autoplay
                 className="w-full h-full opacity-85 mix-blend-overlay"
               />
             </div>
-
             <div className="absolute bottom-0 w-full text-center bg-white/70 backdrop-blur-md py-3 border-t border-sky-100">
               <p className="text-sm text-slate-600 font-medium">
                 AI-powered transformation in seconds
@@ -348,7 +383,7 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* Upload & Crop Section */}
+      {/* ---------------- Upload & Crop Section ---------------- */}
       <motion.section
         initial="hidden"
         animate="show"
@@ -365,13 +400,6 @@ export default function Home() {
               <p className="text-sky-700 font-medium">
                 Upload your selfie to get started
               </p>
-              <input
-                ref={inputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="hidden"
-              />
             </div>
           ) : (
             <>
@@ -431,14 +459,14 @@ export default function Home() {
           {isCompliant !== null && (
             <p className="mt-2 text-sm text-gray-600">
               {isCompliant
-                ? "Image complies with passport standards."
-                : "Image may not comply. Adjust and retry."}
+                ? "✅ Image complies with passport standards."
+                : "⚠️ Image may not comply. Adjust and retry."}
             </p>
           )}
         </motion.div>
       </motion.section>
 
-      {/* Live Demo Section */}
+      {/* ---------------- Live Demo Section ---------------- */}
       <section className="relative z-10 text-center pb-32">
         <motion.h2
           initial={{ opacity: 0, y: 30 }}
@@ -452,37 +480,34 @@ export default function Home() {
 
         <div className="relative w-[280px] sm:w-[320px] md:w-[360px] mx-auto aspect-[3/4] rounded-3xl overflow-hidden shadow-2xl border border-blue-100">
           <motion.div
-            key={previewUrl ? "after" : "before"}
-            initial={{ opacity: 0, scale: 1.05 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.05 }}
-            transition={{ duration: 2, ease: "easeInOut" }}
+            key="demo2-selfie"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: showPassport ? 0 : 1 }}
+            transition={{ duration: 1.4, ease: "easeInOut" }}
             className="absolute inset-0"
           >
             <Image
               src="/demo-selfie2.png"
-              alt="Before - Selfie"
+              alt="Before - Selfie (diverse)"
               fill
-              className="object-cover brightness-95 transition-all duration-[3000ms] ease-in-out animate-fadeIn"
+              className="object-cover brightness-95"
+              priority
             />
           </motion.div>
 
           <motion.div
+            key="demo2-passport"
             initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0, 1, 1, 0], scale: [1, 1.05, 1] }}
-            transition={{
-              duration: 8,
-              repeat: Infinity,
-              repeatType: "loop",
-              ease: "easeInOut",
-            }}
+            animate={{ opacity: showPassport ? 1 : 0 }}
+            transition={{ duration: 1.4, ease: "easeInOut" }}
             className="absolute inset-0"
           >
             <Image
               src="/demo-passport2.png"
-              alt="After - Passport Photo"
+              alt="After - Passport Photo (diverse)"
               fill
-              className="object-cover brightness-100 transition-all duration-700 ease-in-out"
+              className="object-cover brightness-100"
+              priority
             />
           </motion.div>
         </div>
@@ -493,6 +518,12 @@ export default function Home() {
         </p>
       </section>
 
+      {/* ---------------- Footer ---------------- */}
+      <footer className="text-center pb-10 text-gray-500 text-sm">
+        © {new Date().getFullYear()} Snappcrop — Speak. Snap. Smile.
+      </footer>
+
+      {/* ---------------- Animations ---------------- */}
       <style jsx>{`
         @keyframes fadeIn {
           from {
