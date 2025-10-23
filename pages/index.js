@@ -15,8 +15,6 @@ import { getSession } from "../lib/session";
 import Lottie from "lottie-react";
 import aiTransform from "../public/ai-transform.json";
 
-
-
 /**
  * Snappcrop - Full Feature Home Page
  * ------------------------------------------------------------
@@ -59,9 +57,8 @@ export default function Home() {
       // ✅ Only load in browser
       if (typeof window === "undefined") return;
   
-      // ✅ Dynamically import Human.js for browser
       const [{ default: Human }, tf] = await Promise.all([
-        import("@vladmandic/human/dist/human.esm.js"),
+        import("@vladmandic/human"), // ✅ fixed — no dist path needed
         import("@tensorflow/tfjs"),
       ]);
   
