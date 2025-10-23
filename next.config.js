@@ -32,7 +32,7 @@ const nextConfig = {
             value: `
               default-src 'self';
               script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data:;
-              connect-src 'self' https://*.vercel.app https://api.vercel.com https://*.supabase.co;
+              connect-src 'self' blob: data: https://*.vercel.app https://api.vercel.com https://*.supabase.co https://cdn.jsdelivr.net;
               img-src 'self' blob: data: https:;
               style-src 'self' 'unsafe-inline';
               font-src 'self' data:;
