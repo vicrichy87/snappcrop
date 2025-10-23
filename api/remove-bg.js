@@ -4,12 +4,14 @@ import fs from "fs";
 
 export const config = {
   api: {
-    bodyParser: false, // Disable Next.js body parser to use formidable
+    bodyParser: false, // Explicitly disable Next.js body parser for formidable
   },
 };
 
 export default async function handler(req, res) {
+  // Explicitly check and allow POST method
   if (req.method !== "POST") {
+    console.error("Method not allowed:", req.method);
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
