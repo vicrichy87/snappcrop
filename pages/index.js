@@ -53,27 +53,32 @@ export default function Home() {
     const interval = setInterval(() => setShowPassport((prev) => !prev), 4000);
     return () => clearInterval(interval);
   }, []);
-
-  // ---------------- Load Face API (Vercel-compatible) ----------------
+  
+  // ---------------- Load Face API (Final Stable Fix) ----------------
   useEffect(() => {
     let mounted = true;
+  
     const loadFaceApi = async () => {
       try {
-        const faceApiModule = await import("face-api.js");
-        const faceapi = faceApiModule.default ?? faceApiModule;
+        // Explicitly import the correct face-api ES build
+        const faceapi = await import("face-api.js");
   
+        // Ensure the models load properly
         await Promise.all([
           faceapi.nets.ssdMobilenetv1.loadFromUri("/models"),
           faceapi.nets.faceLandmark68Net.loadFromUri("/models"),
         ]);
   
-        if (mounted) setFaceApi(faceapi);
-        setMessage("✅ AI face models loaded successfully.");
+        if (mounted) {
+          setFaceApi(faceapi);
+          setMessage("✅ AI face models loaded successfully.");
+        }
       } catch (error) {
         console.error("Face API load error:", error);
         setMessage(`⚠️ Failed to load AI models: ${error.message}`);
       }
     };
+  
     if (typeof window !== "undefined") loadFaceApi();
     return () => {
       mounted = false;
@@ -143,14 +148,18 @@ export default function Home() {
 
       try {
         const img = new Image();
-        img.src = event.target.result;
+        img.src = e.target.result;
         await new Promise((resolve) => (img.onload = resolve));
-        imageRef.current = img;
-
+      
+        if (!faceApi) {
+          setMessage("⚠️ Face detection models not yet loaded.");
+          return;
+        }
+      
         const detection = await faceApi
-          .detectSingleFace(img)
+          .detectSingleFace(img, new faceApi.SsdMobilenetv1Options())
           .withFaceLandmarks();
-
+      
         if (detection) {
           const { box } = detection.detection;
           const padding = box.width * 0.5;
@@ -159,13 +168,13 @@ export default function Home() {
             y: box.y - padding / 2,
           });
           setZoom(600 / (box.width + padding));
-
+      
           const landmarks = detection.landmarks.positions;
           const isNeutral = checkNeutralExpression(landmarks);
           const hasShadows = checkShadows(img, box);
           const compliant = isNeutral && !hasShadows;
           setIsCompliant(compliant);
-
+      
           setMessage(
             compliant
               ? "✅ Face detected and photo complies with standards."
@@ -176,7 +185,7 @@ export default function Home() {
         }
       } catch (error) {
         console.error("Face detection error:", error);
-        setMessage(`⚠️ Failed to process image. (${error.message})`);
+        setMessage(`⚠️ Face detection failed: ${error.message}`);
       }
     };
     reader.readAsDataURL(f);
