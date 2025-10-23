@@ -58,7 +58,7 @@ export default function Home() {
         if (typeof window === "undefined") return;
   
         const [{ default: Human }, tf] = await Promise.all([
-          import("@vladmandic/human"),
+          import("@vladmandic/human/dist/human.esm.js"), // ✅ Explicit browser ESM build
           import("@tensorflow/tfjs"),
         ]);
   
