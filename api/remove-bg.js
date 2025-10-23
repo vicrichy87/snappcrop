@@ -32,6 +32,14 @@ export default async function handler(req, res) {
     }
 
     try {
+       // Validate image file
+      if (!file || !file.filepath || file.size > 10 * 1024 * 1024) { // 10MB limit
+        return res.status(400).json({ error: "Invalid or oversized image file" });
+      }
+    
+      const formData = new FormData();
+      formData.append("image_file", await fs.readFile(file.filepath), file.originalFilename || `image-${Date.now()}.jpg`);    
+      
       const response = await fetch("https://api.remove.bg/v1.0/removebg", {
         method: "POST",
         headers: {
