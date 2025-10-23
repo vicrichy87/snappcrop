@@ -54,12 +54,13 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  // ---------------- Load Face API ----------------
+  // ---------------- Load Face API (Vercel-compatible) ----------------
   useEffect(() => {
     let mounted = true;
     const loadFaceApi = async () => {
       try {
-        const faceapi = await import("face-api.js/dist/face-api.esm.js"); // ✅ import direct ESM build
+        const faceApiModule = await import("face-api.js");
+        const faceapi = faceApiModule.default ?? faceApiModule;
   
         await Promise.all([
           faceapi.nets.ssdMobilenetv1.loadFromUri("/models"),
@@ -78,6 +79,7 @@ export default function Home() {
       mounted = false;
     };
   }, []);
+
 
   // ---------------- Helpers ----------------
   const fadeUp = {
