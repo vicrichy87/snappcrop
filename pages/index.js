@@ -50,8 +50,10 @@ export default function Home() {
         await faceapi.nets.faceLandmark68Net.loadFromUri("/models");
         if (isMounted) setMessage("Models loaded");
       } catch (error) {
-        if (isMounted) setMessage("Failed to load face detection models.");
-        console.error(error);
+        if (isMounted) {
+          setMessage(`Failed to load face detection models. (Error: ${error.message})`);
+          console.error("Face API error:", error);
+        }
       }
     };
     if (typeof window !== "undefined") loadFaceApi();
