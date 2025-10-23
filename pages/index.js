@@ -55,27 +55,37 @@ export default function Home() {
   }, []);
   
     // Load TensorFlow + Face API dynamically (Next.js 13–15 fix)
-  useEffect(() => {
+    useEffect(() => {
     let mounted = true;
   
     const loadFaceApi = async () => {
       try {
         if (typeof window === "undefined") return;
   
-        // ✅ Load TensorFlow.js first and expose globally
+        // ✅ Load TensorFlow.js first and expose globally (required by face-api)
         if (!window.tf) {
           const tf = await import("@tensorflow/tfjs");
           window.tf = tf;
         }
   
-        // ✅ Dynamically import face-api.js from its ESM bundle directly
-        const faceApiModule = await import(
-          /* webpackIgnore: true */
-          "/node_modules/face-api.js/dist/face-api.esm.js"
-        );
+        let faceApiModule;
+  
+        try {
+          // ✅ Try to load local public/libs version (for Vercel)
+          faceApiModule = await import(
+            /* webpackIgnore: true */
+            "/libs/face-api.min.js"
+          );
+        } catch (err) {
+          console.warn("⚠️ Local libs version not found, falling back to node_modules", err);
+  
+          // ✅ Fallback: load from node_modules (for local dev)
+          faceApiModule = await import("face-api.js");
+        }
   
         const faceapi = faceApiModule.default || faceApiModule;
   
+        // ✅ Load models from /public/models
         await Promise.all([
           faceapi.nets.ssdMobilenetv1.loadFromUri("/models"),
           faceapi.nets.faceLandmark68Net.loadFromUri("/models"),
@@ -86,16 +96,18 @@ export default function Home() {
           setMessage("✅ Face detection models loaded successfully.");
         }
       } catch (error) {
-        console.error("Face API load error:", error);
+        console.error("❌ Face API load error:", error);
         setMessage(`⚠️ Failed to load face detection models: ${error.message}`);
       }
     };
   
     loadFaceApi();
+  
     return () => {
       mounted = false;
     };
   }, []);
+
 
   // ---------------- Helpers ----------------
   const fadeUp = {
