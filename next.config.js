@@ -5,11 +5,21 @@ const nextConfig = {
   reactStrictMode: true, // Helps catch potential issues in React
   swcMinify: true, // Uses SWC for faster builds
 
-  // ✅ Fix: ignore Node 'fs' module in browser
+  // ✅ Webpack fixes for browser compatibility and Human.js build issues
   webpack: (config, { isServer }) => {
+    // ✅ Ignore Node 'fs' module in browser
     if (!isServer) {
       config.resolve.fallback = { fs: false };
     }
+
+    // ✅ Prevent Vercel build from including Human.js Node backend
+    if (isServer) {
+      config.externals.push({
+        "@vladmandic/human": "commonjs @vladmandic/human",
+        "@tensorflow/tfjs-node": "commonjs @tensorflow/tfjs-node",
+      });
+    }
+
     return config;
   },
 
@@ -28,7 +38,7 @@ const nextConfig = {
               img-src 'self' blob: data: https:;
               style-src 'self' 'unsafe-inline';
               font-src 'self' data:;
-            `.replace(/\s{2,}/g, " "), // clean formatting
+            `.replace(/\s{2,}/g, " "), // Clean up whitespace
           },
           {
             key: "X-Content-Type-Options",
@@ -47,7 +57,7 @@ const nextConfig = {
     ];
   },
 
-  // ✅ Optimize Next.js image domains
+  // ✅ Optimize Next.js image handling for Supabase + Vercel
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
@@ -57,7 +67,7 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "**.vercel.app", // for your hosted demo images
+        hostname: "**.vercel.app", // for demo/preview images
       },
     ],
   },
