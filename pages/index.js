@@ -57,10 +57,11 @@ export default function Home() {
       try {
         if (typeof window === "undefined") return;
   
-        const [{ default: Human }, tf] = await Promise.all([
-          import("@vladmandic/human/dist/human.esm.js"), // ✅ Explicit browser ESM build
-          import("@tensorflow/tfjs"),
-        ]);
+    const [{ default: Human }, tf] = await Promise.all([
+      import("https://cdn.jsdelivr.net/npm/@vladmandic/human@3.3.6/dist/human.esm.js"),
+      import("@tensorflow/tfjs"),
+    ]);
+
   
         const human = new Human({
           backend: "webgl",
