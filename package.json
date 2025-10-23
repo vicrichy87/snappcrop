@@ -16,7 +16,7 @@
     "face-api.js": "^0.22.2",
     "formidable": "^3.5.1",
     "framer-motion": "^11.3.19",
-    "human": "^4.5.1",                // ✅ Added Human.js (modern face-api.js replacement)
+    "human": "^4.5.1",                
     "lottie-react": "^2.4.0",
     "next": "14.2.3",
     "react": "18.3.1",
