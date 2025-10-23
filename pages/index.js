@@ -340,7 +340,7 @@ export default function Home() {
               onClick={triggerFile}
               className="inline-flex items-center justify-center gap-2 px-6 py-3 w-full sm:w-auto bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white font-semibold rounded-full shadow-md transition text-sm sm:text-base"
             >
-              <FaCloudUploadAlt /> Try It Now
+              <FaCloudUploadAlt /> Click Here
             </button>
             <a
               href="/about"
