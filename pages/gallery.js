@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { useRouter } from 'next/router';
-import Image from 'next/image';
-import logo from '../public/logo.png';
-import { getSession } from "../lib/session";
+// pages/gallery.js
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import Image from "next/image";
+import logo from "../public/logo.png";
+import { supabase } from "../lib/supabase";
+import { getSession } from "../lib/session"; // ✅ Only one import — from lib/session
 
 export default function Gallery() {
   const [photos, setPhotos] = useState([]);
@@ -15,62 +16,71 @@ export default function Gallery() {
     const checkAuth = async () => {
       const session = await getSession();
       if (!session) {
-        router.push('/login');
+        router.push("/login");
       } else {
-        fetchPhotos();
+        fetchPhotos(session.user.id);
       }
     };
-
     checkAuth();
   }, [router]);
 
-  const fetchPhotos = async () => {
+  const fetchPhotos = async (userId) => {
     try {
       const { data, error } = await supabase
-        .from('photos')
-        .select('filename, created_at')
-        .eq('user_id', (await getSession())?.user.id) // Filter by current user
-        .order('created_at', { ascending: false });
+        .from("photos")
+        .select("filename, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       setPhotos(data);
     } catch (err) {
-      setError('Failed to load gallery. Please try again.');
+      setError("Failed to load gallery. Please try again.");
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <p className="text-center mt-10 text-gray-600">Loading...</p>;
 
   return (
-    <div className="container">
-      <div className="banner">
-        <Image src={logo} alt="Snappcrop Logo" width={200} height={100} />
-        <h1 className="bannerTitle">Snappcrop</h1>
+    <div className="container mx-auto px-6 py-12">
+      <div className="flex flex-col items-center mb-8">
+        <Image src={logo} alt="Snappcrop Logo" width={160} height={80} />
+        <h1 className="text-4xl font-extrabold text-sky-700 mt-4">Snappcrop Gallery</h1>
+        <p className="text-gray-500 mt-2">Your recently processed passport photos</p>
       </div>
-      <p className="subtitle">View your recently processed passport photos.</p>
-      {error && <p className="message">{error}</p>}
+
+      {error && <p className="text-center text-red-500">{error}</p>}
       {!loading && !error && photos.length === 0 && (
-        <p>No photos found. Upload a selfie to get started!</p>
+        <p className="text-center text-gray-600">
+          No photos found. Upload a selfie to get started!
+        </p>
       )}
+
       {photos.length > 0 && (
-        <div className="galleryGrid">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {photos.map((photo) => {
             const imageUrl = supabase.storage
-              .from('passport-photos')
+              .from("passport-photos")
               .getPublicUrl(photo.filename).data.publicUrl;
+
             return (
-              <div key={photo.filename} className="galleryItem">
+              <div
+                key={photo.filename}
+                className="rounded-xl overflow-hidden shadow-lg bg-white p-3 border border-sky-100 text-center hover:shadow-xl transition"
+              >
                 <Image
                   src={imageUrl}
                   alt={`Passport photo ${photo.filename}`}
-                  width={150}
-                  height={150}
-                  className="thumbnail"
+                  width={200}
+                  height={200}
+                  className="rounded-lg object-cover mx-auto"
                 />
-                <p>{new Date(photo.created_at).toLocaleDateString()}</p>
+                <p className="mt-2 text-sm text-gray-500">
+                  {new Date(photo.created_at).toLocaleDateString()}
+                </p>
               </div>
             );
           })}
@@ -79,6 +89,3 @@ export default function Gallery() {
     </div>
   );
 }
-
-// Reuse getSession from _app.js
-import { getSession } from './_app';
