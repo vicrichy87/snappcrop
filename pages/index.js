@@ -14,7 +14,7 @@ import { supabase } from "../lib/supabase";
 import { getSession } from "../lib/session";
 import Lottie from "lottie-react";
 import aiTransform from "../public/ai-transform.json";
-import Human from "@vladmandic/human";
+
 
 
 /**
@@ -26,6 +26,7 @@ import Human from "@vladmandic/human";
  * - Animated demo (selfie → passport) sections
  * - Fully responsive and mobile optimized
  */
+export const dynamic = "force-static";
 
 export default function Home() {
   // ---------------- State Management ----------------
@@ -50,18 +51,46 @@ export default function Home() {
   const inputRef = useRef(null);
   const imageRef = useRef(null);
 
-  // ---------------- Auto Demo Animation ----------------
   useEffect(() => {
-    human = new Human({
-      modelBasePath: 'https://vladmandic.github.io/human/models/',
-      face: { enabled: true },
-    });
+    let humanInstance;
   
-    (async () => {
-      await human.load();
-      setMessage('✅ Face detection models loaded (Human.js)');
-    })();
+    async function loadHuman() {
+      // Run only in browser
+      if (typeof window === "undefined") return;
+  
+      // Dynamically import Human and TensorFlow.js
+      const [{ default: Human }, tf] = await Promise.all([
+        import("@vladmandic/human/dist/human.esm.js"),
+        import("@tensorflow/tfjs"),
+      ]);
+  
+      // Attach TensorFlow backend to window (for Human.js internal use)
+      window.tf = tf;
+  
+      // Initialize Human with browser-safe config
+      const config = {
+        backend: 'webgl',
+        modelBasePath: '/models',
+        face: { enabled: true, detector: { rotation: false } },
+        body: { enabled: false },
+        hand: { enabled: false },
+        object: { enabled: false },
+      };
+  
+      humanInstance = new Human(config);
+      await humanInstance.load();
+      console.log("✅ Human.js models loaded in browser mode");
+  
+      // Store for later use
+      window.human = humanInstance;
+    }
+  
+    loadHuman();
+    return () => {
+      humanInstance = null;
+    };
   }, []);
+
 
   // ---------------- Helpers ----------------
   const fadeUp = {
