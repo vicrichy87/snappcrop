@@ -67,8 +67,15 @@ export default function Home() {
   
       const config = {
         backend: "webgl",
-        modelBasePath: "/models",
-        face: { enabled: true },
+        modelBasePath: "https://vladmandic.github.io/human/models/", // ✅ official CDN path
+        face: {
+          enabled: true,
+          detector: { modelPath: "https://vladmandic.github.io/human/models/blazeface.json" },
+          mesh: { modelPath: "https://vladmandic.github.io/human/models/facemesh.json" },
+          emotion: { modelPath: "https://vladmandic.github.io/human/models/emotion.json" },
+          iris: { modelPath: "https://vladmandic.github.io/human/models/iris.json" },
+          description: { modelPath: "https://vladmandic.github.io/human/models/faceres.json" },
+        },
         body: { enabled: false },
         hand: { enabled: false },
         object: { enabled: false },
