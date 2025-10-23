@@ -117,7 +117,10 @@ export default function Home() {
     try {
       const form = new FormData();
       form.append("file", file);
-      const res = await fetch("/api/remove-bg", { method: "POST", body: form });
+      const res = await fetch("/api/remove-bg", { method: "POST", body: form }).catch(err => {
+        console.error("Fetch error:", err);
+        throw err;
+      });
       console.log("Fetch response:", { status: res.status, ok: res.ok });
       const text = await res.text();
       console.log("Raw response:", text);
@@ -136,6 +139,7 @@ export default function Home() {
       setLoading(false);
     }
   };
+  
   const handleCropAndSave = async () => {
     if (!croppedAreaPixels || !previewUrl)
       return setMessage("Please crop your image first.");
