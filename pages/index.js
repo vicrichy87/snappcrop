@@ -57,7 +57,6 @@ export default function Home() {
       try {
         if (typeof window === "undefined") return;
   
-        // ✅ Import Human and TensorFlow only in the browser
         const [{ default: Human }, tf] = await Promise.all([
           import("@vladmandic/human"),
           import("@tensorflow/tfjs"),
@@ -65,9 +64,10 @@ export default function Home() {
   
         const human = new Human({
           backend: "webgl",
-          cacheModels: true,
+          cacheModels: false, // ✅ disable external cache
           debug: false,
-          modelBasePath: "/models/", // ✅ local path
+          warmup: "none",
+          modelBasePath: `${window.location.origin}/models/`, // ✅ load locally
           face: {
             enabled: true,
             detector: { rotation: true, maxDetected: 1 },
@@ -81,11 +81,10 @@ export default function Home() {
         });
   
         await human.load();
-        console.log("✅ Human.js models loaded successfully");
+        console.log("✅ Human.js models loaded successfully from /models/");
   
         if (mounted) {
           setMessage("✅ Face detection models loaded successfully.");
-          // If you want to save Human instance for later:
           window.human = human;
         }
       } catch (error) {
