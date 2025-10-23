@@ -40,6 +40,7 @@ export default async function handler(req, res) {
         body: await fs.readFile(file.filepath),
       });
 
+      console.log("Remove.bg request headers:", { "X-Api-Key": apiKey });
       console.log("Remove.bg response status:", response.status); // Debug
       if (!response.ok) {
         const errorText = await response.text();
