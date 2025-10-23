@@ -11,7 +11,7 @@ import {
 } from "react-icons/fa";
 import logo from "../public/logo.png";
 import { supabase } from "../lib/supabase";
-import { getSession } from "./_app";
+import { getSession } from "../lib/session";
 import Lottie from "lottie-react";
 import aiTransform from "../public/ai-transform.json";
 
