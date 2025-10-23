@@ -76,14 +76,13 @@ export default function Home() {
     const reader = new FileReader();
     reader.onload = async (e) => {
       setPreviewUrl(e.target.result);
-      const faceapi = await import("face-api.js");
-      const img = new Image();
-      img.src = e.target.result;
-      img.onload = async () => {
+      try {
+        const faceapi = await import("face-api.js");
+        const img = new Image();
+        img.src = e.target.result;
+        await new Promise((resolve) => (img.onload = resolve)); // Wait for image load
         imageRef.current = img;
-        const detections = await faceapi
-          .detectSingleFace(img)
-          .withFaceLandmarks();
+        const detections = await faceapi.detectSingleFace(img).withFaceLandmarks();
         if (detections) {
           const { box } = detections.detection;
           const padding = box.width * 0.5;
@@ -102,7 +101,10 @@ export default function Home() {
         } else {
           setMessage("No face detected. Please adjust manually.");
         }
-      };
+      } catch (error) {
+        console.error("Face detection error:", error);
+        setMessage(`Failed to process image. (Error: ${error.message})`);
+      }
     };
     reader.readAsDataURL(f);
   };
