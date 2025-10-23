@@ -14,7 +14,8 @@ import { supabase } from "../lib/supabase";
 import { getSession } from "../lib/session";
 import Lottie from "lottie-react";
 import aiTransform from "../public/ai-transform.json";
-import Human from 'human'; //human api
+import Human from "@vladmandic/human";
+
 
 /**
  * Snappcrop - Full Feature Home Page
