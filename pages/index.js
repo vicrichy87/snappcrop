@@ -58,12 +58,18 @@ export default function Home() {
   useEffect(() => {
     let mounted = true;
   
-    const loadFaceApi = async () => {
+    const loadModels = async () => {
       try {
-        // Explicitly import the correct face-api ES build
-        const faceapi = await import("face-api.js");
+        // Load TensorFlow.js first
+        if (typeof window !== "undefined" && !window.tf) {
+          const tf = await import("@tensorflow/tfjs");
+          window.tf = tf; // 👈 expose globally for face-api.js
+        }
   
-        // Ensure the models load properly
+        // Then load face-api.js AFTER tf is ready
+        const faceApiModule = await import("face-api.js");
+        const faceapi = faceApiModule.default ?? faceApiModule;
+  
         await Promise.all([
           faceapi.nets.ssdMobilenetv1.loadFromUri("/models"),
           faceapi.nets.faceLandmark68Net.loadFromUri("/models"),
@@ -71,15 +77,16 @@ export default function Home() {
   
         if (mounted) {
           setFaceApi(faceapi);
-          setMessage("✅ AI face models loaded successfully.");
+          setMessage("✅ Face detection models loaded successfully.");
         }
       } catch (error) {
         console.error("Face API load error:", error);
-        setMessage(`⚠️ Failed to load AI models: ${error.message}`);
+        setMessage(`⚠️ Failed to load face detection models: ${error.message}`);
       }
     };
   
-    if (typeof window !== "undefined") loadFaceApi();
+    if (typeof window !== "undefined") loadModels();
+  
     return () => {
       mounted = false;
     };
