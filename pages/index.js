@@ -156,16 +156,15 @@ export default function Home() {
         setMessage("⚠️ Face models not yet loaded. Please wait...");
         return;
       }
-
       try {
+        if (!faceApi) {
+          setMessage("⚠️ Face detection models not loaded yet.");
+          return;
+        }
+      
         const img = new Image();
         img.src = e.target.result;
         await new Promise((resolve) => (img.onload = resolve));
-      
-        if (!faceApi) {
-          setMessage("⚠️ Face detection models not yet loaded.");
-          return;
-        }
       
         const detection = await faceApi
           .detectSingleFace(img, new faceApi.SsdMobilenetv1Options())
@@ -185,11 +184,10 @@ export default function Home() {
           const hasShadows = checkShadows(img, box);
           const compliant = isNeutral && !hasShadows;
           setIsCompliant(compliant);
-      
           setMessage(
             compliant
               ? "✅ Face detected and photo complies with standards."
-              : "⚠️ Face detected but lighting/expression might not comply."
+              : "⚠️ Face detected but expression or lighting might not comply."
           );
         } else {
           setMessage("❌ No face detected. Please adjust manually.");
