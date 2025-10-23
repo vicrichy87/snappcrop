@@ -54,21 +54,27 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
   
-  // ---------------- Load Face API (Final Stable Fix) ----------------
+    // Load TensorFlow + Face API dynamically (Next.js 13–15 fix)
   useEffect(() => {
     let mounted = true;
   
-    const loadModels = async () => {
+    const loadFaceApi = async () => {
       try {
-        // Load TensorFlow.js first
-        if (typeof window !== "undefined" && !window.tf) {
+        if (typeof window === "undefined") return;
+  
+        // ✅ Load TensorFlow.js first and expose globally
+        if (!window.tf) {
           const tf = await import("@tensorflow/tfjs");
-          window.tf = tf; // 👈 expose globally for face-api.js
+          window.tf = tf;
         }
   
-        // Then load face-api.js AFTER tf is ready
-        const faceApiModule = await import("face-api.js");
-        const faceapi = faceApiModule.default ?? faceApiModule;
+        // ✅ Dynamically import face-api.js from its ESM bundle directly
+        const faceApiModule = await import(
+          /* webpackIgnore: true */
+          "/node_modules/face-api.js/dist/face-api.esm.js"
+        );
+  
+        const faceapi = faceApiModule.default || faceApiModule;
   
         await Promise.all([
           faceapi.nets.ssdMobilenetv1.loadFromUri("/models"),
@@ -85,13 +91,11 @@ export default function Home() {
       }
     };
   
-    if (typeof window !== "undefined") loadModels();
-  
+    loadFaceApi();
     return () => {
       mounted = false;
     };
   }, []);
-
 
   // ---------------- Helpers ----------------
   const fadeUp = {
