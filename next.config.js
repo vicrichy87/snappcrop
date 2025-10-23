@@ -1,18 +1,16 @@
-// next.config.js
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true, // Helps catch potential issues in React
-  swcMinify: true, // Uses SWC for faster builds
+  reactStrictMode: true, // catch potential React issues
+  swcMinify: true, // faster builds with SWC
 
-  // ✅ Webpack fixes for browser compatibility and Human.js build issues
+  // ✅ Webpack fixes for browser & Vercel build compatibility
   webpack: (config, { isServer }) => {
-    // ✅ Ignore Node 'fs' module in browser
+    // Ignore Node 'fs' in the browser
     if (!isServer) {
       config.resolve.fallback = { fs: false };
     }
 
-    // ✅ Prevent Vercel build from including Human.js Node backend
+    // Prevent Next/Vercel from bundling Node-specific TFJS modules
     if (isServer) {
       config.externals.push({
         "@vladmandic/human": "commonjs @vladmandic/human",
@@ -23,7 +21,7 @@ const nextConfig = {
     return config;
   },
 
-  // ✅ Fix: CSP & MIME-type handling
+  // ✅ Content Security Policy optimized for local models
   async headers() {
     return [
       {
@@ -34,11 +32,11 @@ const nextConfig = {
             value: `
               default-src 'self';
               script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data:;
-              connect-src 'self' https://*.vercel.app https://api.vercel.com https://*.supabase.co https://vladmandic.github.io https://cdn.jsdelivr.net https://raw.githubusercontent.com;
+              connect-src 'self' https://*.vercel.app https://api.vercel.com https://*.supabase.co;
               img-src 'self' blob: data: https:;
               style-src 'self' 'unsafe-inline';
               font-src 'self' data:;
-            `.replace(/\s{2,}/g, " "), // Clean up whitespace
+            `.replace(/\s{2,}/g, " "), // clean formatting
           },
           {
             key: "X-Content-Type-Options",
@@ -57,22 +55,29 @@ const nextConfig = {
     ];
   },
 
-  // ✅ Optimize Next.js image handling for Supabase + Vercel
+  // ✅ Allow optimized images from Supabase and Vercel only
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "**.supabase.co", // for user-uploaded images
+        hostname: "**.supabase.co",
       },
       {
         protocol: "https",
-        hostname: "**.vercel.app", // for demo/preview images
+        hostname: "**.vercel.app",
       },
     ],
   },
 
-  // ✅ Enable source maps in production for debugging
+  // ✅ Include /public/models/ in build output for Human.js
+  experimental: {
+    outputFileTracingIncludes: {
+      "/": ["./public/models/**"], // ensures Human models are deployed with Vercel
+    },
+  },
+
+  // ✅ Generate source maps for debugging in production
   productionBrowserSourceMaps: true,
 };
 
