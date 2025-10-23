@@ -117,13 +117,14 @@ export default function Home() {
       form.append("file", file);
       const res = await fetch("/api/remove-bg", { method: "POST", body: form });
       const data = await res.json();
-      if (!res.ok || data.error) throw new Error(data.error || "Error");
+      console.log("Response:", res.status, data); // Add this for debugging
+      if (!res.ok || data.error) throw new Error(data.error || `Error ${res.status}`);
       setPreviewUrl(data.url);
       setIsBgRemoved(true);
       setMessage("Background removed successfully!");
     } catch (error) {
-      setMessage("Failed to remove background. Try again.");
-      console.error(error);
+      setMessage(`Failed to remove background. Try again. (Error: ${error.message})`);
+      console.error("Background removal error:", error);
     } finally {
       setLoading(false);
     }
