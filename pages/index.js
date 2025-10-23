@@ -27,6 +27,7 @@ import aiTransform from "../public/ai-transform.json";
  * - Fully responsive and mobile optimized
  */
 export const dynamic = "force-static";
+export const revalidate = 0;
 
 export default function Home() {
   // ---------------- State Management ----------------
@@ -55,23 +56,22 @@ export default function Home() {
     let humanInstance;
   
     async function loadHuman() {
-      // Run only in browser
+      // ✅ Only load in browser
       if (typeof window === "undefined") return;
   
-      // Dynamically import Human and TensorFlow.js
+      // ✅ Dynamically import Human.js for browser
       const [{ default: Human }, tf] = await Promise.all([
         import("@vladmandic/human/dist/human.esm.js"),
         import("@tensorflow/tfjs"),
       ]);
   
-      // Attach TensorFlow backend to window (for Human.js internal use)
+      // ✅ Attach tf to window for backend use
       window.tf = tf;
   
-      // Initialize Human with browser-safe config
       const config = {
-        backend: 'webgl',
-        modelBasePath: '/models',
-        face: { enabled: true, detector: { rotation: false } },
+        backend: "webgl",
+        modelBasePath: "/models",
+        face: { enabled: true },
         body: { enabled: false },
         hand: { enabled: false },
         object: { enabled: false },
@@ -79,18 +79,17 @@ export default function Home() {
   
       humanInstance = new Human(config);
       await humanInstance.load();
-      console.log("✅ Human.js models loaded in browser mode");
+      console.log("✅ Human.js browser models loaded");
   
-      // Store for later use
       window.human = humanInstance;
     }
   
     loadHuman();
+  
     return () => {
       humanInstance = null;
     };
   }, []);
-
 
   // ---------------- Helpers ----------------
   const fadeUp = {
