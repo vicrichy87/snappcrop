@@ -118,12 +118,14 @@ export default function Home() {
       const form = new FormData();
       form.append("file", file);
       const res = await fetch("/api/remove-bg", { method: "POST", body: form });
-      console.log("Fetch response:", { status: res.status, ok: res.ok }); // Debug
-      const text = await res.text(); // Get raw response
+      console.log("Fetch response:", { status: res.status, ok: res.ok });
+      const text = await res.text();
       console.log("Raw response:", text);
       const data = text ? JSON.parse(text) : {};
       console.log("Parsed data:", data);
-      if (!res.ok || data.error) throw new Error(data.error || `Error ${res.status}`);
+      if (!res.ok) {
+        throw new Error(data.error || `Error ${res.status}`);
+      }
       setPreviewUrl(data.url);
       setIsBgRemoved(true);
       setMessage("Background removed successfully!");
@@ -134,7 +136,6 @@ export default function Home() {
       setLoading(false);
     }
   };
-
   const handleCropAndSave = async () => {
     if (!croppedAreaPixels || !previewUrl)
       return setMessage("Please crop your image first.");
