@@ -180,7 +180,8 @@ export default function Home() {
             return resolve();
           }
   
-          human.detect(canvas).then((result) => {
+          human.process(canvas).then(() => {
+            const result = human.result;
             console.log("Detection result:", result);
             if (result.face && result.face.length > 0) {
               const face = result.face[0];
