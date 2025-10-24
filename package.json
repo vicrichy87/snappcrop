@@ -10,7 +10,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@mediapipe/face_detection": "^0.5.0", 
+    "@mediapipe/face_detection": "^0.4.1646425229",
     "@supabase/supabase-js": "^2.45.4",
     "@tensorflow/tfjs": "^4.20.0",
     "axios": "^1.7.2",
