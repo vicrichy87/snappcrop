@@ -55,21 +55,21 @@ export default function Home() {
 
   useEffect(() => {
     let mounted = true;
-
+  
     const loadHuman = async () => {
       if (typeof window === "undefined") return;
-
+  
       try {
         const [mod, tf] = await Promise.all([
           import("/libs/human.esm.js"),
           import("@tensorflow/tfjs"),
         ]);
-
+  
         const Human = mod.Human || mod.default;
         if (typeof Human !== "function") {
           throw new Error("Human.js export is not a constructor");
         }
-
+  
         const humanConfig = {
           backend: "webgl",
           cacheModels: true,
@@ -87,12 +87,12 @@ export default function Home() {
           gesture: { enabled: false },
           object: { enabled: false },
         };
-
+  
         const human = new Human(humanConfig);
         await human.load();
         console.log("✅ Human.js loaded successfully. Config:", humanConfig);
-        console.log("Human instance:", human);
-
+        console.log("Human instance methods:", Object.keys(human));
+  
         if (mounted) {
           humanRef.current = human;
           setMessage("✅ Face detection models loaded successfully.");
@@ -102,13 +102,13 @@ export default function Home() {
         setMessage(`⚠️ Failed to load face detection models: ${error.message}`);
       }
     };
-
+  
     loadHuman();
     return () => {
       mounted = false;
     };
   }, []);
-
+  
   // ---------------- Helpers ----------------
   const fadeUp = {
     hidden: { opacity: 0, y: 30 },
@@ -143,38 +143,45 @@ export default function Home() {
     return new Promise((resolve) => {
       const file = inputRef.current?.files?.[0];
       if (!file) return resolve();
-
+  
       setMessage("");
       setIsBgRemoved(false);
       setDownloadUrl(null);
       setFile(file);
-
+  
       const reader = new FileReader();
       reader.onload = (event) => {
         setPreviewUrl(event.target.result);
         const img = new Image();
         img.src = event.target.result;
-
+  
         img.onload = () => {
           if (!(img instanceof HTMLImageElement) || !img.complete) {
             console.error("Invalid image object:", img);
             setMessage("⚠️ Invalid image. Please try another file.");
             return resolve();
           }
-
+  
           const canvas = document.createElement("canvas");
           canvas.width = img.width;
           canvas.height = img.height;
           const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            console.error("Failed to get canvas context");
+            setMessage("⚠️ Canvas initialization failed.");
+            return resolve();
+          }
           ctx.drawImage(img, 0, 0);
-
+          console.log("Canvas created:", { width: canvas.width, height: canvas.height });
+  
           const human = humanRef.current;
           if (!human) {
             setMessage("⚠️ Face detection model not loaded. Please wait and try again.");
             return resolve();
           }
-
+  
           human.detect(canvas).then((result) => {
+            console.log("Detection result:", result);
             if (result.face && result.face.length > 0) {
               const face = result.face[0];
               const box = face.box || { x: 0, y: 0, width: 0, height: 0 };
@@ -193,12 +200,12 @@ export default function Home() {
             }
             resolve();
           }).catch((error) => {
-            console.error("Face detection error:", error, { stack: error.stack });
+            console.error("Face detection error:", error, { stack: error.stack, canvas: canvas.toDataURL() });
             setMessage(`⚠️ Face detection failed. (Error: ${error.message})`);
             resolve();
           });
         };
-
+  
         img.onerror = () => {
           console.error("Image load error");
           setMessage("⚠️ Failed to load image. Please try again.");
@@ -208,12 +215,12 @@ export default function Home() {
       reader.readAsDataURL(file);
     });
   };
-
+  
   const triggerFile = () => {
     inputRef.current?.click();
     handleFileChange().catch((error) => console.error("Upload error:", error));
   };
-
+  
   // ---------------- Background Removal ----------------
   const handleRemoveBackground = async () => {
     if (!file || !previewUrl)
