@@ -106,7 +106,7 @@ export default function Home() {
     return () => {
       mounted = false;
     };
-  }, []);​
+  }, []);
 
   // ---------------- Helpers ----------------
   const fadeUp = {
