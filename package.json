@@ -10,8 +10,8 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@mediapipe/camera_utils": "^0.4.1646425229", 
-    "@mediapipe/face_detection": "^0.4.1646425229",
+    "@mediapipe/camera_utils": "0.3.1675466862",
+    "@mediapipe/face_detection": "0.4.1646425229",
     "@supabase/supabase-js": "^2.45.4",
     "@tensorflow/tfjs": "^4.20.0",
     "axios": "^1.7.2",
