@@ -52,41 +52,59 @@ export default function Home() {
 
   // --- Human ---
 const humanRef = useRef(null);
+useEffect(() => {
+  let mounted = true;
 
-  useEffect(() => {
-    let mounted = true;
-  
-    const loadHuman = async () => {
-      if (typeof window === "undefined") return;
-  
-      try {
-        const [mod, tf] = await Promise.all([
-          import("/libs/human.esm.js"),
-          import("@tensorflow/tfjs"),
-        ]);
-  
-        // ✅ handle both export patterns
-        const Human = mod.Human || mod.default;
-        const human = typeof Human === "function" ? new Human() : Human;
-  
-        await human.load();
-        console.log("✅ Human.js loaded successfully from /libs/human.esm.js");
-  
-        if (mounted) {
-          window.human = human;
-          setMessage("✅ Face detection models loaded successfully.");
-        }
-      } catch (error) {
-        console.error("❌ Human.js load error:", error);
-        setMessage(`⚠️ Failed to load face detection models: ${error.message}`);
+  const loadHuman = async () => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const [mod, tf] = await Promise.all([
+        import("/libs/human.esm.js"),
+        import("@tensorflow/tfjs"),
+      ]);
+
+      // ✅ Handle both export styles (Human class or instance)
+      const Human = mod.Human || mod.default;
+      const human = typeof Human === "function" ? new Human() : Human;
+
+      // ✅ Face detection only — disable unused models
+      human.config = {
+        backend: "webgl",
+        cacheModels: true,
+        debug: false,
+        modelBasePath: `${window.location.origin}/models/`,
+        face: {
+          enabled: true,
+          detector: { rotation: true, maxDetected: 1 },
+          mesh: { enabled: true },
+          iris: { enabled: true },
+          emotion: { enabled: true },
+        },
+        body: { enabled: false },
+        hand: { enabled: false },
+        gesture: { enabled: false },
+      };
+
+      await human.load();
+      console.log("✅ Human.js loaded successfully from /libs/human.esm.js");
+
+      if (mounted) {
+        window.human = human; // store globally for detection use
+        setMessage("✅ Face detection models loaded successfully.");
       }
-    };
-  
-    loadHuman();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    } catch (error) {
+      console.error("❌ Human.js load error:", error);
+      setMessage(`⚠️ Failed to load face detection models: ${error.message}`);
+    }
+  };
+
+  loadHuman();
+
+  return () => {
+    mounted = false;
+  };
+}, []);
 
   // ---------------- Helpers ----------------
   const fadeUp = {
