@@ -32,6 +32,22 @@ const nextConfig = {
   // ✅ Content Security Policy optimized for local libs/models
   async headers() {
     return [
+      // ⚙️ Specific MIME-type fix for Human.js
+      {
+        source: "/libs/human.esm.js",
+        headers: [
+          {
+            key: "Content-Type",
+            value: "application/javascript; charset=utf-8", // ✅ Force correct MIME
+          },
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+
+      // 🌐 General app-wide security headers
       {
         source: "/(.*)",
         headers: [
@@ -46,20 +62,14 @@ const nextConfig = {
                 https://*.supabase.co
                 https://cdn.jsdelivr.net
                 /libs/
-                /models/; 
+                /models/;
               img-src 'self' blob: data: https:;
               style-src 'self' 'unsafe-inline';
               font-src 'self' data:;
             `.replace(/\s{2,}/g, " ").trim(),
           },
-          {
-            key: "X-Content-Type-Options",
-            value: "nosniff",
-          },
-          {
-            key: "Referrer-Policy",
-            value: "strict-origin-when-cross-origin",
-          },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
