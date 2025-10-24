@@ -12,12 +12,21 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing imageUrl in request" });
     }
 
-    // ✅ Initialize Vision API client
+    let credentials;
+    if (process.env.GOOGLE_CREDENTIALS) {
+      try {
+        credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+      } catch (e) {
+        console.error("❌ Invalid GOOGLE_CREDENTIALS JSON:", e);
+        return res.status(500).json({ error: "Invalid GOOGLE_CREDENTIALS" });
+      }
+    }
+
+    // ✅ Initialize Vision API client safely for Vercel
     const client = new vision.ImageAnnotatorClient({
-      keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS_PATH, // path to your service account JSON
+      credentials: credentials,
     });
 
-    // ✅ Send request to Vision API
     const [result] = await client.faceDetection(imageUrl);
     const faces = result.faceAnnotations || [];
 
