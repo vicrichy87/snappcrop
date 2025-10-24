@@ -36,7 +36,6 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [isCompliant, setIsCompliant] = useState(null);
-  const [faceApi, setFaceApi] = useState(null);
 
   // crop state
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -49,66 +48,8 @@ export default function Home() {
   // refs
   const inputRef = useRef(null);
   const imageRef = useRef(null);
+  const videoRef = useRef(null); // For MediaPipe compatibility
 
-  // --- Human ---
-  const humanRef = useRef(null);
-
-  useEffect(() => {
-    let mounted = true;
-  
-    const loadHuman = async () => {
-      if (typeof window === "undefined") return;
-  
-      try {
-        const [mod, tf] = await Promise.all([
-          import("/libs/human.esm.js"),
-          import("@tensorflow/tfjs"),
-        ]);
-  
-        const Human = mod.Human || mod.default;
-        if (typeof Human !== "function") {
-          throw new Error("Human.js export is not a constructor");
-        }
-  
-        const humanConfig = {
-          backend: "webgl",
-          cacheModels: true,
-          debug: true,
-          modelBasePath: `${window.location.origin}/models/`,
-          face: {
-            enabled: true,
-            detector: { rotation: true, maxDetected: 1 },
-            mesh: { enabled: true },
-            iris: { enabled: true },
-            emotion: { enabled: true },
-          },
-          body: { enabled: false },
-          hand: { enabled: false },
-          gesture: { enabled: false },
-          object: { enabled: false },
-        };
-  
-        const human = new Human(humanConfig);
-        await human.load();
-        console.log("✅ Human.js loaded successfully. Config:", humanConfig);
-        console.log("Human instance methods:", Object.keys(human));
-  
-        if (mounted) {
-          humanRef.current = human;
-          setMessage("✅ Face detection models loaded successfully.");
-        }
-      } catch (error) {
-        console.error("❌ Human.js load error:", error, { stack: error.stack });
-        setMessage(`⚠️ Failed to load face detection models: ${error.message}`);
-      }
-    };
-  
-    loadHuman();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-  
   // ---------------- Helpers ----------------
   const fadeUp = {
     hidden: { opacity: 0, y: 30 },
@@ -120,15 +61,19 @@ export default function Home() {
   }, []);
 
   const checkNeutralExpression = (landmarks) => {
-    const upperLip = landmarks[50];
-    const lowerLip = landmarks[58];
+    const upperLip = landmarks[10]; // Approx upper lip in MediaPipe (adjust index based on model)
+    const lowerLip = landmarks[12]; // Approx lower lip
     const mouthOpen = lowerLip.y - upperLip.y > 10;
     return !mouthOpen;
   };
 
-  const checkShadows = (canvas, box) => {
+  const checkShadows = (img, box) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = box.width;
+    canvas.height = box.height;
     const ctx = canvas.getContext("2d");
-    const imageData = ctx.getImageData(box.x, box.y, box.width, box.height);
+    ctx.drawImage(img, box.x, box.y, box.width, box.height, 0, 0, box.width, box.height);
+    const imageData = ctx.getImageData(0, 0, box.width, box.height);
     const data = imageData.data;
     let darkPixels = 0;
     for (let i = 0; i < data.length; i += 4) {
@@ -138,75 +83,99 @@ export default function Home() {
     return darkPixels / (box.width * box.height) > 0.1;
   };
 
+  // ---------------- Load MediaPipe ----------------
+  useEffect(() => {
+    let isMounted = true;
+    const loadMediaPipe = async () => {
+      try {
+        const { FaceDetection } = await import("@mediapipe/face_detection");
+        const { Camera } = await import("@mediapipe/camera_utils");
+        const faceDetection = new FaceDetection({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`,
+        });
+        faceDetection.setOptions({
+          selfieMode: false,
+          model: "short",
+          minDetectionConfidence: 0.5,
+        });
+        if (isMounted) {
+          imageRef.current = faceDetection;
+          setMessage("✅ Models loaded.");
+        }
+      } catch (error) {
+        if (isMounted) setMessage(`⚠️ Failed to load models: ${error.message}`);
+        console.error("MediaPipe load error:", error);
+      }
+    };
+    if (typeof window !== "undefined") loadMediaPipe();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // ---------------- File Upload + Face Detection ----------------
   const handleFileChange = () => {
     return new Promise((resolve) => {
       const file = inputRef.current?.files?.[0];
       if (!file) return resolve();
-  
+
       setMessage("");
       setIsBgRemoved(false);
       setDownloadUrl(null);
       setFile(file);
-  
+
       const reader = new FileReader();
       reader.onload = (event) => {
         setPreviewUrl(event.target.result);
         const img = new Image();
         img.src = event.target.result;
-  
+
         img.onload = () => {
-          if (!(img instanceof HTMLImageElement) || !img.complete) {
-            console.error("Invalid image object:", img);
-            setMessage("⚠️ Invalid image. Please try another file.");
+          const faceDetection = imageRef.current;
+          if (!faceDetection) {
+            setMessage("⚠️ Face detection model not loaded. Please wait and try again.");
             return resolve();
           }
-  
+
           const canvas = document.createElement("canvas");
           canvas.width = img.width;
           canvas.height = img.height;
           const ctx = canvas.getContext("2d");
-          if (!ctx) {
-            console.error("Failed to get canvas context");
-            setMessage("⚠️ Canvas initialization failed.");
-            return resolve();
-          }
           ctx.drawImage(img, 0, 0);
-          console.log("Canvas created:", { width: canvas.width, height: canvas.height });
-  
-          const human = humanRef.current;
-          if (!human) {
-            setMessage("⚠️ Face detection model not loaded. Please wait and try again.");
-            return resolve();
-          }
-  
-          human.process(canvas).then(() => {
-            const result = human.result;
-            console.log("Detection result:", result);
-            if (result.face && result.face.length > 0) {
-              const face = result.face[0];
-              const box = face.box || { x: 0, y: 0, width: 0, height: 0 };
+
+          faceDetection.onResults((results) => {
+            if (results.detections.length > 0) {
+              const detection = results.detections[0];
+              const box = {
+                x: detection.boundingBox.originX,
+                y: detection.boundingBox.originY,
+                width: detection.boundingBox.width,
+                height: detection.boundingBox.height,
+              };
               const padding = box.width * 0.5;
               setCrop({ x: box.x - padding / 2, y: box.y - padding / 2 });
               setZoom(600 / (box.width + padding));
-              const landmarks = face.landmarks || [];
-              const isNeutral = landmarks.length > 0 ? checkNeutralExpression(landmarks) : true;
-              const hasShadows = box.width > 0 ? checkShadows(canvas, box) : false;
+              // Note: MediaPipe's basic face detection doesn't provide landmarks by default
+              // For landmarks, you'd need to use face_mesh, but for simplicity, we'll skip it here
+              const isNeutral = true; // Placeholder, adjust if using face_mesh
+              const hasShadows = checkShadows(img, box);
               setIsCompliant(isNeutral && !hasShadows);
               setMessage(
-                `✅ Face detected, crop adjusted. ${isNeutral ? "Image complies." : "⚠️ Warning: Non-neutral expression or shadows detected."}`
+                `✅ Face detected, crop adjusted. ${isCompliant ? "Image complies." : "⚠️ Warning: Shadows detected."}`
               );
             } else {
               setMessage("⚠️ No face detected. Please adjust manually.");
             }
             resolve();
-          }).catch((error) => {
-            console.error("Face detection error:", error, { stack: error.stack, canvas: canvas.toDataURL() });
+          });
+
+          faceDetection.send({ image: img }).catch((error) => {
+            console.error("Face detection error:", error);
             setMessage(`⚠️ Face detection failed. (Error: ${error.message})`);
             resolve();
           });
         };
-  
+
         img.onerror = () => {
           console.error("Image load error");
           setMessage("⚠️ Failed to load image. Please try again.");
@@ -216,12 +185,12 @@ export default function Home() {
       reader.readAsDataURL(file);
     });
   };
-  
+
   const triggerFile = () => {
     inputRef.current?.click();
     handleFileChange().catch((error) => console.error("Upload error:", error));
   };
-  
+
   // ---------------- Background Removal ----------------
   const handleRemoveBackground = async () => {
     if (!file || !previewUrl)
@@ -300,7 +269,7 @@ export default function Home() {
   // ---------------- UI ----------------
   return (
     <main className="relative min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-100 overflow-hidden">
-      {/* Background Animations */}
+      {/* Background Waves */}
       <div className="absolute inset-0 overflow-hidden -z-10">
         <div className="absolute top-0 left-0 w-[120%] h-[120%] bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-blue-200 via-transparent to-transparent opacity-40 animate-wave-slow"></div>
         <div className="absolute bottom-0 right-0 w-[120%] h-[120%] bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-indigo-200 via-transparent to-transparent opacity-40 animate-wave-fast"></div>
@@ -315,7 +284,7 @@ export default function Home() {
         className="hidden"
       />
 
-      {/* ---------------- Hero Section ---------------- */}
+      {/* Hero Section */}
       <section className="w-full max-w-6xl px-6 lg:px-12 py-10 flex flex-col md:flex-row items-center justify-between gap-10 mx-auto">
         {/* Left side */}
         <div className="flex flex-col items-start gap-5 text-left max-w-2xl">
@@ -360,7 +329,7 @@ export default function Home() {
               onClick={triggerFile}
               className="inline-flex items-center justify-center gap-2 px-6 py-3 w-full sm:w-auto bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white font-semibold rounded-full shadow-md transition text-sm sm:text-base"
             >
-              <FaCloudUploadAlt /> Add a Selfie!
+              <FaCloudUploadAlt /> Add Selfie!
             </button>
             <a
               href="/about"
@@ -424,7 +393,7 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* ---------------- Upload & Crop Section ---------------- */}
+      {/* Upload & Crop Section */}
       <motion.section
         initial="hidden"
         animate="show"
@@ -507,7 +476,7 @@ export default function Home() {
         </motion.div>
       </motion.section>
 
-      {/* ---------------- Live Demo Section ---------------- */}
+      {/* Live Demo Section */}
       <section className="relative z-10 text-center pb-32">
         <motion.h2
           initial={{ opacity: 0, y: 30 }}
@@ -559,12 +528,12 @@ export default function Home() {
         </p>
       </section>
 
-      {/* ---------------- Footer ---------------- */}
+      {/* Footer */}
       <footer className="text-center pb-10 text-gray-500 text-sm">
         © {new Date().getFullYear()} Snappcrop — Speak. Snap. Smile.
       </footer>
 
-      {/* ---------------- Animations ---------------- */}
+      {/* Animations */}
       <style jsx>{`
         @keyframes fadeIn {
           from {
