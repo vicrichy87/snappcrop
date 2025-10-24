@@ -72,7 +72,7 @@ export default function Home() {
         const humanConfig = {
           backend: "webgl",
           cacheModels: true,
-          debug: false,
+          debug: true, // Enable debug for more logs
           modelBasePath: `${window.location.origin}/models/`,
           face: {
             enabled: true,
@@ -89,14 +89,15 @@ export default function Home() {
   
         const human = new Human(humanConfig);
         await human.load();
-        console.log("✅ Human.js loaded successfully from /libs/human.esm.js");
+        console.log("✅ Human.js loaded successfully. Config:", humanConfig);
+        console.log("Human instance:", human);
   
         if (mounted) {
           humanRef.current = human;
           setMessage("✅ Face detection models loaded successfully.");
         }
       } catch (error) {
-        console.error("❌ Human.js load error:", error);
+        console.error("❌ Human.js load error:", error, { stack: error.stack });
         setMessage(`⚠️ Failed to load face detection models: ${error.message}`);
       }
     };
@@ -162,12 +163,18 @@ export default function Home() {
       setFile(file);
   
       const reader = new FileReader();
-      reader.onload = async (event) => {
+      reader.onload = (event) => {
         setPreviewUrl(event.target.result);
         const img = new Image();
         img.src = event.target.result;
   
         img.onload = () => {
+          if (!(img instanceof HTMLImageElement) || !img.complete) {
+            console.error("Invalid image object:", img);
+            setMessage("⚠️ Invalid image. Please try another file.");
+            return resolve();
+          }
+  
           const human = humanRef.current;
           if (!human) {
             setMessage("⚠️ Face detection model not loaded. Please wait and try again.");
@@ -175,15 +182,15 @@ export default function Home() {
           }
   
           human.detect(img).then((result) => {
-            if (result.face.length > 0) {
+            if (result.face && result.face.length > 0) {
               const face = result.face[0];
-              const box = face.box;
+              const box = face.box || { x: 0, y: 0, width: 0, height: 0 }; // Fallback
               const padding = box.width * 0.5;
               setCrop({ x: box.x - padding / 2, y: box.y - padding / 2 });
               setZoom(600 / (box.width + padding));
-              const landmarks = face.landmarks;
-              const isNeutral = checkNeutralExpression(landmarks);
-              const hasShadows = checkShadows(img, box);
+              const landmarks = face.landmarks || [];
+              const isNeutral = landmarks.length > 0 ? checkNeutralExpression(landmarks) : true;
+              const hasShadows = box.width > 0 ? checkShadows(img, box) : false;
               setIsCompliant(isNeutral && !hasShadows);
               setMessage(
                 `✅ Face detected, crop adjusted. ${isNeutral ? "Image complies." : "⚠️ Warning: Non-neutral expression or shadows detected."}`
@@ -193,10 +200,16 @@ export default function Home() {
             }
             resolve();
           }).catch((error) => {
-            console.error("Face detection error:", error);
+            console.error("Face detection error:", error, { stack: error.stack });
             setMessage(`⚠️ Face detection failed. (Error: ${error.message})`);
             resolve();
           });
+        };
+  
+        img.onerror = () => {
+          console.error("Image load error");
+          setMessage("⚠️ Failed to load image. Please try again.");
+          resolve();
         };
       };
       reader.readAsDataURL(file);
