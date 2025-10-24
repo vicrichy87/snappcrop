@@ -60,16 +60,27 @@ export default function Home() {
       if (typeof window === "undefined") return;
   
       try {
-        const [mod, tf] = await Promise.all([
-          import("/libs/human.esm.js"),
-          import("@tensorflow/tfjs"),
-        ]);
+        // ✅ 1. Load TensorFlow first
+        await import("@tensorflow/tfjs");
   
-        const Human = mod.Human || mod.default;
-        if (typeof Human !== "function") {
-          throw new Error("Human.js export is not a constructor");
-        }
+        // ✅ 2. Load Human.js from /public/libs/ via <script type="module">
+        await new Promise((resolve, reject) => {
+          if (window.Human) return resolve(); // already loaded
+          const script = document.createElement("script");
+          script.src = "/libs/human.esm.js";
+          script.type = "module";
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
   
+        // ✅ 3. Wait briefly for module to initialize
+        await new Promise((r) => setTimeout(r, 200));
+  
+        const Human = window.Human;
+        if (!Human) throw new Error("window.Human not available after load");
+  
+        // ✅ 4. Configure only the face models
         const humanConfig = {
           backend: "webgl",
           cacheModels: true,
@@ -88,17 +99,20 @@ export default function Home() {
           object: { enabled: false },
         };
   
+        // ✅ 5. Instantiate Human.js safely
         const human = new Human(humanConfig);
         await human.load();
+  
         console.log("✅ Human.js loaded successfully. Config:", humanConfig);
         console.log("Human instance methods:", Object.keys(human));
   
         if (mounted) {
           humanRef.current = human;
+          window.human = human; // optional for console debugging
           setMessage("✅ Face detection models loaded successfully.");
         }
       } catch (error) {
-        console.error("❌ Human.js load error:", error, { stack: error.stack });
+        console.error("❌ Human.js load error:", error);
         setMessage(`⚠️ Failed to load face detection models: ${error.message}`);
       }
     };
