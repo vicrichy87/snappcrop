@@ -10,10 +10,8 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@supabase
-/supabase-js": "^2.45.4",
-    "@tensorflow
-/tfjs": "^4.20.0",
+    "@supabase/supabase-js": "^2.45.4",
+    "@tensorflow/tfjs": "^4.20.0",
     "axios": "^1.7.2",
     "face-api.js": "^0.22.2",
     "formidable": "^3.5.1",
