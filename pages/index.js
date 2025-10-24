@@ -52,7 +52,7 @@ export default function Home() {
 
   // --- Human ---
   const humanRef = useRef(null);
-   useEffect(() => {
+  useEffect(() => {
     let mounted = true;
   
     const loadHuman = async () => {
@@ -72,7 +72,7 @@ export default function Home() {
         const humanConfig = {
           backend: "webgl",
           cacheModels: true,
-          debug: true, // Enable debug for more logs
+          debug: true, // Enable for detailed logs
           modelBasePath: `${window.location.origin}/models/`,
           face: {
             enabled: true,
@@ -125,22 +125,17 @@ export default function Home() {
     return !mouthOpen;
   };
 
-  const checkShadows = (img, box) => {
-    const canvas = document.createElement("canvas");
-    canvas.width = box.width;
-    canvas.height = box.height;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(
-      img,
-      box.x,
-      box.y,
-      box.width,
-      box.height,
-      0,
-      0,
-      box.width,
-      box.height
-    );
+const checkShadows = (canvas, box) => {
+  const ctx = canvas.getContext("2d");
+  const imageData = ctx.getImageData(box.x, box.y, box.width, box.height);
+  const data = imageData.data;
+  let darkPixels = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+    if (brightness < 50) darkPixels++;
+  }
+  return darkPixels / (box.width * box.height) > 0.1;
+};
     const imageData = ctx.getImageData(0, 0, box.width, box.height);
     const data = imageData.data;
     let darkPixels = 0;
@@ -175,13 +170,19 @@ export default function Home() {
             return resolve();
           }
   
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+  
           const human = humanRef.current;
           if (!human) {
             setMessage("⚠️ Face detection model not loaded. Please wait and try again.");
             return resolve();
           }
   
-          human.detect(img).then((result) => {
+          human.detect(canvas).then((result) => {
             if (result.face && result.face.length > 0) {
               const face = result.face[0];
               const box = face.box || { x: 0, y: 0, width: 0, height: 0 }; // Fallback
@@ -190,7 +191,7 @@ export default function Home() {
               setZoom(600 / (box.width + padding));
               const landmarks = face.landmarks || [];
               const isNeutral = landmarks.length > 0 ? checkNeutralExpression(landmarks) : true;
-              const hasShadows = box.width > 0 ? checkShadows(img, box) : false;
+              const hasShadows = box.width > 0 ? checkShadows(canvas, box) : false; // Use canvas for shadows
               setIsCompliant(isNeutral && !hasShadows);
               setMessage(
                 `✅ Face detected, crop adjusted. ${isNeutral ? "Image complies." : "⚠️ Warning: Non-neutral expression or shadows detected."}`
