@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "snappcrop",
+  "private_key_id": "d8588ed908e0f4677778450c8471a2b393d72718",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDETGOvGiyDzTuO\n8dvl1NVLaHXmT0jcugnc2PKWrQIibzKI16IC2c8Wpm8bZF8aQyP+V5k2WKZrEdO3\n/RGjjLbj4VufdMFedfeDnWU65v7GKzqDaOwsKhvKWUyJXbF/J7xjjPQz+LNCfI0w\nPjbVt+H+Oz2FK1e3VQ/RorBzfp/kmrfx1m+HhuCABZQ64WOOCjEzr9EnzcYpS5Dc\nCo9npqlwktPvgvVeXvpLg0v75scd/jBg6+BL7CY4ms0shsxrd+69uS0SjB36dnD/\nIY7x5Tit5Ds1yLwWIZbGZbTEmfwDuYNNrIVeK4+dxiJf890MDS7JS4EQ2hy1Huqy\n3CTG41NBAgMBAAECggEAK1boTWE8gc8evrU0hT5j51XFbheEMUOb6Ng3W0AQcBTX\n9fGR8gov2ELf1g7nlm9Lc5zYlXCmMY6KjZ1Atzjaql53sbF//gCSqMrn7kTQ7GTf\n8uKH/ko/v4HOzadTiIz34Yzd39mhjmTccVHTHoWOTmi68Pt8TtxndTPzvFQxLjH9\nvLmQ2eVZ2vnMyFtKhAxEi98ERVLFK7tryxXMZOckSvunj4tMtU61noOtuGFSMjt/\n8Hcy7bfx2wndhDAPCa7AYvaLkwnQZjeOoCmjFRkHz2QJ8tximid5OGA7oJoFtrqz\nLyMNZeYbdL8zSIIwV2cBm3Ayn9jHMvbY1yerQ45H1wKBgQDhGdOkhtJDOMxJ5Wsa\nZ9rtmOLObBJDN28yRizhGIl6HWZL2oMCZTAxK3imZ2Hso1zsg3M/MXMLfbMllfNI\nidnCM9+o7614qw8V8iidYTzEVmKH5PT7+YjZExh2ZbkVE/zMhwgQ8prIs7KZ1Pnv\nt7TwaHvDSlt/vI+of6FVig9UnwKBgQDfPm1BbWvygWlLSVUmcIXkp/H1bnXSQDgB\nuhAdCIVPWI2peQ/C+xqVDXEOFooiHVNfDxZJvWeNYIc9L2tgQOCd0/AQf045ULa3\nuDHYyqSQUt+4e9KVWTfgnnX/fGeLX7kABnsvyI5/TFQFhuza5HOvNBjxRK2skkLr\nXafpO4tsHwKBgQCpmzAgs4USKWWj+Dyu9Lm8dInQRxWrl8Us+Dswj7BmVmiRlt9H\nmr6pDbwmhZb/GkgV3SWk47lvWxL0qvtYGKX+8d8ABzeJyDnhq0h27KFAvmYXRqhg\ngzBdf0nbS+Icw6ai5MtrGaEOwHc9+X8o5B5tVgyKpSg0IvuLVj9VmGTcuQKBgBqN\nf0s/6439jHuS7ljTG2nV+/Z4O/VVBBRYgCAj6k9EthzJNHG5kjDWV3MYhTeHi2oM\nDleY+p8bMxq48CmTreO32J7ttW0lx4XUl8E0YRx1bvyvZZ2z7ex+jIRl1J8ENKnn\nG3HUhfZoKro5kSR79bKKHMldpNaY0vLRwe4A0hV7AoGBAMuYCGbJsgYgFCPbmNpR\nTFHbLbu+gCx+GuJ6/DIWMkcyJ0NUIBrvwnPkaggvZfSrgM6IggIu1Ktwy3ClrJOw\nB8c2KlmowRJpwjwMN5CU27iK79IfzKfExCmIHQcYxLGOs0/OjXEX2997Hm/Ks5jl\nLyrFKgnljPfH8/U3r04sJkiH\n-----END PRIVATE KEY-----\n",
+  "client_email": "snappcrop-service@snappcrop.iam.gserviceaccount.com",
+  "client_id": "106141227775543366145",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/snappcrop-service%40snappcrop.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
