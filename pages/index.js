@@ -50,6 +50,14 @@ export default function Home() {
   const inputRef = useRef(null);
   const imageRef = useRef(null);
 
+  const humanRef = useRef(null);
+  const human = new Human({ ...config });
+  await human.load();
+  
+  humanRef.current = human; // ✅ save instance globally
+  window.human = human;     // optional for debugging
+
+
   useEffect(() => {
     let mounted = true;
   
@@ -57,7 +65,6 @@ export default function Home() {
       if (typeof window === "undefined") return;
   
       try {
-        // ✅ Import the Human.js ESM module and TensorFlow
         const [{ default: Human }, tf] = await Promise.all([
           import("/libs/human.esm.js"),
           import("@tensorflow/tfjs"),
@@ -67,7 +74,7 @@ export default function Home() {
           backend: "webgl",
           cacheModels: true,
           debug: false,
-          modelBasePath: `${window.location.origin}/models/`, // ✅ local models path
+          modelBasePath: `${window.location.origin}/models/`,
           face: {
             enabled: true,
             detector: { rotation: true, maxDetected: 1 },
@@ -84,7 +91,7 @@ export default function Home() {
         console.log("✅ Human.js loaded successfully from /libs/human.esm.js");
   
         if (mounted) {
-          window.human = human;
+          humanRef.current = human; // ✅ store instance
           setMessage("✅ Face detection models loaded successfully.");
         }
       } catch (error) {
@@ -147,20 +154,34 @@ export default function Home() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
+  
     reader.onload = async () => {
       setPreviewUrl(reader.result);
       const img = new Image();
       img.src = reader.result;
       await new Promise((r) => (img.onload = r));
-      const result = await human.detect(img);
-      if (result.face.length > 0) {
-        const face = result.face[0];
-        console.log(face.landmarks);
-        setMessage('✅ Face detected and landmarks found.');
-      } else {
-        setMessage('⚠️ No face detected.');
+  
+      const human = humanRef.current;
+      if (!human) {
+        setMessage("⚠️ Please wait, face detection model is still loading...");
+        return;
+      }
+  
+      try {
+        const result = await human.detect(img);
+        if (result.face.length > 0) {
+          const face = result.face[0];
+          console.log(face.landmarks);
+          setMessage("✅ Face detected and landmarks found.");
+        } else {
+          setMessage("⚠️ No face detected.");
+        }
+      } catch (err) {
+        console.error("Detection error:", err);
+        setMessage("⚠️ Face detection failed. Please try again.");
       }
     };
+  
     reader.readAsDataURL(file);
   };
   
