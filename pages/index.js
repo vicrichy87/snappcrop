@@ -106,9 +106,18 @@ export default function Home() {
           uploadForm.append("file", file);
   
           const uploadRes = await fetch("/api/upload", { method: "POST", body: uploadForm });
-          const uploadData = await uploadRes.json();
+          const uploadText = await uploadRes.text(); // safer than res.json()
+          let uploadData = {};
+  
+          try {
+            uploadData = uploadText ? JSON.parse(uploadText) : {};
+          } catch (e) {
+            console.warn("Upload API returned non-JSON:", uploadText);
+            uploadData = {};
+          }
+  
           if (!uploadRes.ok || !uploadData.url) {
-            throw new Error(uploadData.error || "Upload failed");
+            throw new Error(uploadData.error || `Upload failed (status ${uploadRes.status})`);
           }
   
           const imageUrl = uploadData.url;
@@ -117,10 +126,24 @@ export default function Home() {
           setMessage("🔍 Analyzing face using Google Vision...");
           const analyzeRes = await fetch("/api/analyze-face", {
             method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ imageUrl }),
           });
-          const data = await analyzeRes.json();
   
+          const analyzeText = await analyzeRes.text(); // safer parsing
+          let data = {};
+          try {
+            data = analyzeText ? JSON.parse(analyzeText) : {};
+          } catch (e) {
+            console.warn("Vision API returned non-JSON:", analyzeText);
+            data = {};
+          }
+  
+          if (!analyzeRes.ok) {
+            throw new Error(data.error || `Vision API failed (status ${analyzeRes.status})`);
+          }
+  
+          // Step 3: Handle Vision API result
           if (data.success) {
             setIsCompliant(data.isCompliant);
             setMessage(data.message);
@@ -151,7 +174,6 @@ export default function Home() {
     inputRef.current?.click();
     handleFileChange().catch((error) => console.error("Upload error:", error));
   };
-
 
   // ---------------- Background Removal ----------------
   const handleRemoveBackground = async () => {
