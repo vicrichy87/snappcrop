@@ -1,10 +1,12 @@
 import formidable from "formidable";
 import fs from "fs";
+import path from "path";
 import { supabase } from "../../lib/supabase";
 
+// ✅ Required to let Formidable handle file streams
 export const config = {
   api: {
-    bodyParser: false, // ⛔ Important: formidable needs raw stream
+    bodyParser: false,
   },
 };
 
@@ -14,41 +16,51 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Parse form data
-    const form = formidable({});
-    const [fields, files] = await form.parse(req);
-    const file = files.file?.[0];
+    const form = formidable({ multiples: false, keepExtensions: true });
 
-    if (!file) {
-      return res.status(400).json({ error: "No file provided" });
-    }
+    form.parse(req, async (err, fields, files) => {
+      if (err) {
+        console.error("❌ Formidable error:", err);
+        return res.status(400).json({ error: "Error parsing form data" });
+      }
 
-    const fileBuffer = await fs.promises.readFile(file.filepath);
-    const fileName = `uploads/${Date.now()}-${file.originalFilename}`;
+      const file = files.file?.[0] || files.file;
+      if (!file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
 
-    // Upload to Supabase Storage bucket
-    const { data, error } = await supabase.storage
-      .from("snappcrop-uploads") // ✅ replace with your actual bucket name
-      .upload(fileName, fileBuffer, {
-        contentType: file.mimetype || "image/jpeg",
-        upsert: false,
-      });
+      const buffer = await fs.promises.readFile(file.filepath);
+      const fileExt = path.extname(file.originalFilename);
+      const fileName = `${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2)}${fileExt}`;
+      const filePath = `uploads/${fileName}`;
 
-    if (error) {
-      console.error("Supabase upload error:", error);
-      return res.status(500).json({ error: "Failed to upload to storage" });
-    }
+      // ✅ Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from("snappcrop-uploads")
+        .upload(filePath, buffer, {
+          contentType: file.mimetype,
+          upsert: false,
+        });
 
-    // Generate public URL
-    const { data: publicUrlData } = supabase.storage
-      .from("snappcrop-uploads")
-      .getPublicUrl(fileName);
+      if (error) {
+        console.error("❌ Supabase upload error:", error);
+        return res.status(500).json({ error: "Failed to upload to storage" });
+      }
 
-    return res.status(200).json({
-      url: publicUrlData.publicUrl,
+      // ✅ Get public URL
+      const {
+        data: { publicUrl },
+      } = supabase.storage
+        .from("snappcrop-uploads")
+        .getPublicUrl(filePath);
+
+      console.log("✅ File uploaded:", publicUrl);
+      return res.status(200).json({ url: publicUrl });
     });
   } catch (error) {
-    console.error("Upload API error:", error);
-    return res.status(500).json({ error: error.message });
+    console.error("❌ Upload handler crash:", error);
+    return res.status(500).json({ error: "Unexpected server error" });
   }
 }
