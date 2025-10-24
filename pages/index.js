@@ -51,13 +51,7 @@ export default function Home() {
   const imageRef = useRef(null);
 
   const humanRef = useRef(null);
-  const human = new Human({ ...config });
-  await human.load();
   
-  humanRef.current = human; // ✅ save instance globally
-  window.human = human;     // optional for debugging
-
-
   useEffect(() => {
     let mounted = true;
   
