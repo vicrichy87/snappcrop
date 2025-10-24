@@ -1,7 +1,7 @@
 // pages/index.js
 import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
-import Cropper from "react-easy-crop";
+import Cropper = "react-easy-crop";
 import { motion } from "framer-motion";
 import {
   FaCamera,
@@ -48,7 +48,63 @@ export default function Home() {
   // refs
   const inputRef = useRef(null);
   const imageRef = useRef(null);
-  const videoRef = useRef(null); // For MediaPipe compatibility
+  const humanRef = useRef(null);
+
+  // ---------------- Load Human API ----------------
+  useEffect(() => {
+    let mounted = true;
+
+    const loadHuman = async () => {
+      if (typeof window === "undefined") return;
+
+      try {
+        const [mod, tf] = await Promise.all([
+          import("/libs/human.esm.js"),
+          import("@tensorflow/tfjs"),
+        ]);
+
+        const Human = mod.Human || mod.default;
+        if (typeof Human !== "function") {
+          throw new Error("Human.js export is not a constructor");
+        }
+
+        const humanConfig = {
+          backend: "webgl",
+          cacheModels: true,
+          debug: true,
+          modelBasePath: `${window.location.origin}/models/`,
+          face: {
+            enabled: true,
+            detector: { rotation: true, maxDetected: 1 },
+            mesh: { enabled: true },
+            iris: { enabled: true },
+            emotion: { enabled: true },
+          },
+          body: { enabled: false },
+          hand: { enabled: false },
+          gesture: { enabled: false },
+          object: { enabled: false },
+        };
+
+        const human = new Human(humanConfig);
+        await human.load();
+        console.log("✅ Human.js loaded successfully. Config:", humanConfig);
+
+        if (mounted) {
+          humanRef.current = human;
+          setMessage("✅ Face detection models loaded successfully.");
+        }
+      } catch (error) {
+        console.error("❌ Human.js load error:", error, { stack: error.stack });
+        setMessage(`⚠️ Failed to load face detection models: ${error.message}`);
+      }
+    };
+
+    loadHuman();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // ---------------- Helpers ----------------
   const fadeUp = {
@@ -61,19 +117,15 @@ export default function Home() {
   }, []);
 
   const checkNeutralExpression = (landmarks) => {
-    const upperLip = landmarks[10]; // Approx upper lip in MediaPipe (adjust index based on model)
-    const lowerLip = landmarks[12]; // Approx lower lip
+    const upperLip = landmarks[10]; // Approximate upper lip (adjust based on model)
+    const lowerLip = landmarks[12]; // Approximate lower lip
     const mouthOpen = lowerLip.y - upperLip.y > 10;
     return !mouthOpen;
   };
 
-  const checkShadows = (img, box) => {
-    const canvas = document.createElement("canvas");
-    canvas.width = box.width;
-    canvas.height = box.height;
+  const checkShadows = (canvas, box) => {
     const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, box.x, box.y, box.width, box.height, 0, 0, box.width, box.height);
-    const imageData = ctx.getImageData(0, 0, box.width, box.height);
+    const imageData = ctx.getImageData(box.x, box.y, box.width, box.height);
     const data = imageData.data;
     let darkPixels = 0;
     for (let i = 0; i < data.length; i += 4) {
@@ -83,60 +135,30 @@ export default function Home() {
     return darkPixels / (box.width * box.height) > 0.1;
   };
 
-  // ---------------- Load MediaPipe ----------------
-  useEffect(() => {
-    let isMounted = true;
-    const loadMediaPipe = async () => {
-      try {
-        const { FaceDetection } = await import("@mediapipe/face_detection");
-        const faceDetection = new FaceDetection({
-          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@0.4.1646425229/${file}`,
-        });
-        faceDetection.setOptions({
-          selfieMode: false,
-          model: "short",
-          minDetectionConfidence: 0.5,
-        });
-        if (isMounted) {
-          imageRef.current = faceDetection;
-          setMessage("✅ Models loaded.");
-        }
-      } catch (error) {
-        if (isMounted) setMessage(`⚠️ Failed to load models: ${error.message}`);
-        console.error("MediaPipe load error:", error);
-      }
-    };
-    if (typeof window !== "undefined") loadMediaPipe();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // ---------------- File Upload + Face Detection ----------------
   // ---------------- File Upload + Face Detection ----------------
   const handleFileChange = () => {
     return new Promise((resolve) => {
       const file = inputRef.current?.files?.[0];
       if (!file) return resolve();
-  
+
       setMessage("");
       setIsBgRemoved(false);
       setDownloadUrl(null);
       setFile(file);
-  
+
       const reader = new FileReader();
       reader.onload = (event) => {
         setPreviewUrl(event.target.result);
         const img = new Image();
         img.src = event.target.result;
-  
+
         img.onload = () => {
           if (!(img instanceof HTMLImageElement) || !img.complete) {
             console.error("Invalid image object:", img);
             setMessage("⚠️ Invalid image. Please try another file.");
             return resolve();
           }
-  
+
           const canvas = document.createElement("canvas");
           canvas.width = img.width;
           canvas.height = img.height;
@@ -148,48 +170,40 @@ export default function Home() {
           }
           ctx.drawImage(img, 0, 0);
           console.log("Canvas created:", { width: canvas.width, height: canvas.height });
-  
-          const faceDetection = imageRef.current;
-          if (!faceDetection) {
+
+          const human = humanRef.current;
+          if (!human) {
             setMessage("⚠️ Face detection model not loaded. Please wait and try again.");
             return resolve();
           }
-  
-          // Set up onResults callback
-          faceDetection.onResults((results) => {
-            console.log("Detection results:", results);
-            if (results.detections && results.detections.length > 0) {
-              const detection = results.detections[0];
-              const box = {
-                x: detection.boundingBox.originX,
-                y: detection.boundingBox.originY,
-                width: detection.boundingBox.width,
-                height: detection.boundingBox.height,
-              };
+
+          human.process(canvas).then(() => {
+            const result = human.result;
+            console.log("Detection result:", result);
+            if (result.face && result.face.length > 0) {
+              const face = result.face[0];
+              const box = face.box || { x: 0, y: 0, width: 0, height: 0 };
               const padding = box.width * 0.5;
               setCrop({ x: box.x - padding / 2, y: box.y - padding / 2 });
               setZoom(600 / (box.width + padding));
-              // Note: Basic face detection doesn't provide landmarks; use face_mesh for that
-              const isNeutral = true; // Placeholder, adjust if using face_mesh
-              const hasShadows = checkShadows(img, box);
+              const landmarks = face.landmarks || [];
+              const isNeutral = landmarks.length > 0 ? checkNeutralExpression(landmarks) : true;
+              const hasShadows = box.width > 0 ? checkShadows(canvas, box) : false;
               setIsCompliant(isNeutral && !hasShadows);
               setMessage(
-                `✅ Face detected, crop adjusted. ${isCompliant ? "Image complies." : "⚠️ Warning: Shadows detected."}`
+                `✅ Face detected, crop adjusted. ${isCompliant ? "Image complies." : "⚠️ Warning: Non-neutral expression or shadows detected."}`
               );
             } else {
               setMessage("⚠️ No face detected. Please adjust manually.");
             }
             resolve();
-          });
-  
-          // Send the image for processing
-          faceDetection.send({ image: img }).catch((error) => {
-            console.error("Face detection send error:", error);
+          }).catch((error) => {
+            console.error("Face detection error:", error, { stack: error.stack, canvas: canvas.toDataURL() });
             setMessage(`⚠️ Face detection failed. (Error: ${error.message})`);
             resolve();
           });
         };
-  
+
         img.onerror = () => {
           console.error("Image load error");
           setMessage("⚠️ Failed to load image. Please try again.");
@@ -199,12 +213,11 @@ export default function Home() {
       reader.readAsDataURL(file);
     });
   };
-  
+
   const triggerFile = () => {
     inputRef.current?.click();
     handleFileChange().catch((error) => console.error("Upload error:", error));
   };
-
 
   // ---------------- Background Removal ----------------
   const handleRemoveBackground = async () => {
