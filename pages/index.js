@@ -1,7 +1,7 @@
 // pages/index.js
 import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
-import Cropper = "react-easy-crop";
+import Cropper from "react-easy-crop";
 import { motion } from "framer-motion";
 import {
   FaCamera,
