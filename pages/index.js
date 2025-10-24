@@ -54,21 +54,33 @@ export default function Home() {
     let mounted = true;
   
     const loadHuman = async () => {
-      try {
-        if (typeof window === "undefined") return;
+      if (typeof window === "undefined") return;
   
-    const [{ default: Human }, tf] = await Promise.all([
-      import("https://cdn.jsdelivr.net/npm/@vladmandic/human@3.3.6/dist/human.esm.js"),
-      import("@tensorflow/tfjs"),
-    ]);
-
+      try {
+        // ✅ Dynamically load the Human.js ESM bundle via <script> tag
+        if (!window.Human) {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src =
+              "/libs/human.esm.js"; // <-- Local copy inside /public/libs/
+            script.type = "module";
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+        }
+  
+        // ✅ Wait briefly for the module to initialize
+        await new Promise((r) => setTimeout(r, 300));
+  
+        const { default: Human } = await import("/libs/human.esm.js");
+        const tf = await import("@tensorflow/tfjs");
   
         const human = new Human({
           backend: "webgl",
-          cacheModels: false, // ✅ disable external cache
+          cacheModels: true,
           debug: false,
-          warmup: "none",
-          modelBasePath: `${window.location.origin}/models/`, // ✅ load locally
+          modelBasePath: `${window.location.origin}/models/`,
           face: {
             enabled: true,
             detector: { rotation: true, maxDetected: 1 },
@@ -82,11 +94,11 @@ export default function Home() {
         });
   
         await human.load();
-        console.log("✅ Human.js models loaded successfully from /models/");
+        console.log("✅ Human.js loaded successfully from /libs/human.esm.js");
   
         if (mounted) {
-          setMessage("✅ Face detection models loaded successfully.");
           window.human = human;
+          setMessage("✅ Face detection models loaded successfully.");
         }
       } catch (error) {
         console.error("❌ Human.js load error:", error);
