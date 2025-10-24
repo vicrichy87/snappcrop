@@ -50,55 +50,59 @@ export default function Home() {
   const inputRef = useRef(null);
   const imageRef = useRef(null);
 
-  const humanRef = useRef(null);
-  
-  useEffect(() => {
-    let mounted = true;
-  
-    const loadHuman = async () => {
-      if (typeof window === "undefined") return;
-  
-      try {
-        const [{ default: Human }, tf] = await Promise.all([
-          import("/libs/human.esm.js"),
-          import("@tensorflow/tfjs"),
-        ]);
-  
-        const human = new Human({
-          backend: "webgl",
-          cacheModels: true,
-          debug: false,
-          modelBasePath: `${window.location.origin}/models/`,
-          face: {
-            enabled: true,
-            detector: { rotation: true, maxDetected: 1 },
-            mesh: { enabled: true },
-            iris: { enabled: true },
-            emotion: { enabled: true },
-          },
-          body: { enabled: false },
-          hand: { enabled: false },
-          gesture: { enabled: false },
-        });
-  
-        await human.load();
-        console.log("✅ Human.js loaded successfully from /libs/human.esm.js");
-  
-        if (mounted) {
-          humanRef.current = human; // ✅ store instance
-          setMessage("✅ Face detection models loaded successfully.");
-        }
-      } catch (error) {
-        console.error("❌ Human.js load error:", error);
-        setMessage(`⚠️ Failed to load face detection models: ${error.message}`);
+  // --- Human ---
+const humanRef = useRef(null);
+
+useEffect(() => {
+  let mounted = true;
+
+  const loadHuman = async () => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const [{ default: Human }, tf] = await Promise.all([
+        import("/libs/human.esm.js"),
+        import("@tensorflow/tfjs"),
+      ]);
+
+      // ✅ create Human instance inside async function
+      const human = new Human({
+        backend: "webgl",
+        cacheModels: true,
+        debug: false,
+        modelBasePath: `${window.location.origin}/models/`,
+        face: {
+          enabled: true,
+          detector: { rotation: true, maxDetected: 1 },
+          mesh: { enabled: true },
+          iris: { enabled: true },
+          emotion: { enabled: true },
+        },
+        body: { enabled: false },
+        hand: { enabled: false },
+        gesture: { enabled: false },
+      });
+
+      await human.load();
+      console.log("✅ Human.js loaded successfully from /libs/human.esm.js");
+
+      if (mounted) {
+        humanRef.current = human; // ✅ store instance globally
+        setMessage("✅ Face detection models loaded successfully.");
       }
-    };
-  
-    loadHuman();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    } catch (error) {
+      console.error("❌ Human.js load error:", error);
+      setMessage(`⚠️ Failed to load face detection models: ${error.message}`);
+    }
+  };
+
+  loadHuman(); // ✅ call async loader properly
+
+  return () => {
+    mounted = false;
+  };
+}, []);
+
 
   // ---------------- Helpers ----------------
   const fadeUp = {
