@@ -57,30 +57,17 @@ export default function Home() {
       if (typeof window === "undefined") return;
   
       try {
-        // ✅ Dynamically load the Human.js ESM bundle via <script> tag
-        if (!window.Human) {
-          await new Promise((resolve, reject) => {
-            const script = document.createElement("script");
-            script.src =
-              "/libs/human.esm.js"; // <-- Local copy inside /public/libs/
-            script.type = "module";
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-          });
-        }
-  
-        // ✅ Wait briefly for the module to initialize
-        await new Promise((r) => setTimeout(r, 300));
-  
-        const { default: Human } = await import("/libs/human.esm.js");
-        const tf = await import("@tensorflow/tfjs");
+        // ✅ Import the Human.js ESM module and TensorFlow
+        const [{ default: Human }, tf] = await Promise.all([
+          import("/libs/human.esm.js"),
+          import("@tensorflow/tfjs"),
+        ]);
   
         const human = new Human({
           backend: "webgl",
           cacheModels: true,
           debug: false,
-          modelBasePath: `${window.location.origin}/models/`,
+          modelBasePath: `${window.location.origin}/models/`, // ✅ local models path
           face: {
             enabled: true,
             detector: { rotation: true, maxDetected: 1 },
