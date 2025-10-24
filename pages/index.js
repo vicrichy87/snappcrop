@@ -50,60 +50,9 @@ export default function Home() {
   const imageRef = useRef(null);
   const humanRef = useRef(null);
 
-  // ---------------- Load Human API ----------------
+  // ---------------- Load Google Vision API ----------------
   useEffect(() => {
-    let mounted = true;
-
-    const loadHuman = async () => {
-      if (typeof window === "undefined") return;
-
-      try {
-        const [mod, tf] = await Promise.all([
-          import("/libs/human.esm.js"),
-          import("@tensorflow/tfjs"),
-        ]);
-
-        const Human = mod.Human || mod.default;
-        if (typeof Human !== "function") {
-          throw new Error("Human.js export is not a constructor");
-        }
-
-        const humanConfig = {
-          backend: "webgl",
-          cacheModels: true,
-          debug: true,
-          modelBasePath: `${window.location.origin}/models/`,
-          face: {
-            enabled: true,
-            detector: { rotation: true, maxDetected: 1 },
-            mesh: { enabled: true },
-            iris: { enabled: true },
-            emotion: { enabled: true },
-          },
-          body: { enabled: false },
-          hand: { enabled: false },
-          gesture: { enabled: false },
-          object: { enabled: false },
-        };
-
-        const human = new Human(humanConfig);
-        await human.load();
-        console.log("✅ Human.js loaded successfully. Config:", humanConfig);
-
-        if (mounted) {
-          humanRef.current = human;
-          setMessage("✅ Face detection models loaded successfully.");
-        }
-      } catch (error) {
-        console.error("❌ Human.js load error:", error, { stack: error.stack });
-        setMessage(`⚠️ Failed to load face detection models: ${error.message}`);
-      }
-    };
-
-    loadHuman();
-    return () => {
-      mounted = false;
-    };
+    setMessage("🧠 Initializing Google Vision for face analysis...");
   }, []);
 
   // ---------------- Helpers ----------------
@@ -135,89 +84,74 @@ export default function Home() {
     return darkPixels / (box.width * box.height) > 0.1;
   };
 
-  // ---------------- File Upload + Face Detection ----------------
+  // ---------------- File Upload + Vision API Face Detection ----------------
   const handleFileChange = () => {
     return new Promise((resolve) => {
       const file = inputRef.current?.files?.[0];
       if (!file) return resolve();
-
+  
       setMessage("");
       setIsBgRemoved(false);
       setDownloadUrl(null);
       setFile(file);
-
+  
       const reader = new FileReader();
-      reader.onload = (event) => {
-        setPreviewUrl(event.target.result);
-        const img = new Image();
-        img.src = event.target.result;
-
-        img.onload = () => {
-          if (!(img instanceof HTMLImageElement) || !img.complete) {
-            console.error("Invalid image object:", img);
-            setMessage("⚠️ Invalid image. Please try another file.");
-            return resolve();
+      reader.onload = async (event) => {
+        const imageBase64 = event.target.result;
+        setPreviewUrl(imageBase64);
+  
+        try {
+          // Step 1: Upload to Supabase or temporary API to get public URL
+          const uploadForm = new FormData();
+          uploadForm.append("file", file);
+  
+          const uploadRes = await fetch("/api/upload", { method: "POST", body: uploadForm });
+          const uploadData = await uploadRes.json();
+          if (!uploadRes.ok || !uploadData.url) {
+            throw new Error(uploadData.error || "Upload failed");
           }
-
-          const canvas = document.createElement("canvas");
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) {
-            console.error("Failed to get canvas context");
-            setMessage("⚠️ Canvas initialization failed.");
-            return resolve();
-          }
-          ctx.drawImage(img, 0, 0);
-          console.log("Canvas created:", { width: canvas.width, height: canvas.height });
-
-          const human = humanRef.current;
-          if (!human) {
-            setMessage("⚠️ Face detection model not loaded. Please wait and try again.");
-            return resolve();
-          }
-
-          human.process(canvas).then(() => {
-            const result = human.result;
-            console.log("Detection result:", result);
-            if (result.face && result.face.length > 0) {
-              const face = result.face[0];
-              const box = face.box || { x: 0, y: 0, width: 0, height: 0 };
-              const padding = box.width * 0.5;
-              setCrop({ x: box.x - padding / 2, y: box.y - padding / 2 });
-              setZoom(600 / (box.width + padding));
-              const landmarks = face.landmarks || [];
-              const isNeutral = landmarks.length > 0 ? checkNeutralExpression(landmarks) : true;
-              const hasShadows = box.width > 0 ? checkShadows(canvas, box) : false;
-              setIsCompliant(isNeutral && !hasShadows);
-              setMessage(
-                `✅ Face detected, crop adjusted. ${isCompliant ? "Image complies." : "⚠️ Warning: Non-neutral expression or shadows detected."}`
-              );
-            } else {
-              setMessage("⚠️ No face detected. Please adjust manually.");
-            }
-            resolve();
-          }).catch((error) => {
-            console.error("Face detection error:", error, { stack: error.stack, canvas: canvas.toDataURL() });
-            setMessage(`⚠️ Face detection failed. (Error: ${error.message})`);
-            resolve();
+  
+          const imageUrl = uploadData.url;
+  
+          // Step 2: Call Vision API backend for analysis
+          setMessage("🔍 Analyzing face using Google Vision...");
+          const analyzeRes = await fetch("/api/analyze-face", {
+            method: "POST",
+            body: JSON.stringify({ imageUrl }),
           });
-        };
-
-        img.onerror = () => {
-          console.error("Image load error");
-          setMessage("⚠️ Failed to load image. Please try again.");
-          resolve();
-        };
+          const data = await analyzeRes.json();
+  
+          if (data.success) {
+            setIsCompliant(data.isCompliant);
+            setMessage(data.message);
+            console.log("Vision AI details:", data.details);
+          } else {
+            setMessage(data.message || "⚠️ Could not analyze face.");
+          }
+  
+        } catch (error) {
+          console.error("Face detection error:", error);
+          setMessage(`⚠️ Face analysis failed. (${error.message})`);
+        }
+  
+        resolve();
       };
+  
+      reader.onerror = () => {
+        console.error("File read error");
+        setMessage("⚠️ Failed to read image. Please try again.");
+        resolve();
+      };
+  
       reader.readAsDataURL(file);
     });
   };
-
+  
   const triggerFile = () => {
     inputRef.current?.click();
     handleFileChange().catch((error) => console.error("Upload error:", error));
   };
+
 
   // ---------------- Background Removal ----------------
   const handleRemoveBackground = async () => {
