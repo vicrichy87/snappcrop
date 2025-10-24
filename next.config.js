@@ -10,7 +10,7 @@ const nextConfig = {
       config.resolve.fallback = { fs: false };
     }
 
-    // Prevent Next/Vercel from bundling Node-specific TFJS modules
+    // Prevent Next/Vercel from bundling Node-specific TFJS or Human.js modules
     if (isServer) {
       config.externals.push({
         "@vladmandic/human": "commonjs @vladmandic/human",
@@ -18,10 +18,18 @@ const nextConfig = {
       });
     }
 
+    // ✅ Allow importing local ESM bundles (e.g., /public/libs/human.esm.js)
+    config.module.rules.push({
+      test: /\.m?js$/,
+      resolve: {
+        fullySpecified: false, // prevents ESM resolution issues
+      },
+    });
+
     return config;
   },
 
-  // ✅ Content Security Policy optimized for local models
+  // ✅ Content Security Policy optimized for local libs/models
   async headers() {
     return [
       {
@@ -32,11 +40,17 @@ const nextConfig = {
             value: `
               default-src 'self';
               script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data:;
-              connect-src 'self' blob: data: https://*.vercel.app https://api.vercel.com https://*.supabase.co https://cdn.jsdelivr.net;
+              connect-src 'self' blob: data:
+                https://*.vercel.app
+                https://api.vercel.com
+                https://*.supabase.co
+                https://cdn.jsdelivr.net
+                /libs/
+                /models/; 
               img-src 'self' blob: data: https:;
               style-src 'self' 'unsafe-inline';
               font-src 'self' data:;
-            `.replace(/\s{2,}/g, " "), // clean formatting
+            `.replace(/\s{2,}/g, " ").trim(),
           },
           {
             key: "X-Content-Type-Options",
@@ -70,10 +84,10 @@ const nextConfig = {
     ],
   },
 
-  // ✅ Include /public/models/ in build output for Human.js
+  // ✅ Ensure /public/models/ and /public/libs/ are included in Vercel deployment
   experimental: {
     outputFileTracingIncludes: {
-      "/": ["./public/models/**"], // ensures Human models are deployed with Vercel
+      "/": ["./public/models/**", "./public/libs/**"],
     },
   },
 
