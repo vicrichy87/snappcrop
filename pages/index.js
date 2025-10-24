@@ -221,7 +221,8 @@ export default function Home() {
 
   // ---------------- Background Removal ----------------
   const handleRemoveBackground = async () => {
-    if (!file || !previewUrl) return setMessage("Please upload a selfie first.");
+    if (!file || !previewUrl)
+      return setMessage("Please upload a selfie first.");
     setLoading(true);
     setMessage("Removing background...");
     try {
@@ -229,14 +230,16 @@ export default function Home() {
       form.append("file", file);
       const res = await fetch("/api/remove-bg", { method: "POST", body: form });
       console.log("API response status:", res.status);
-      const text = await res.text(); // Get raw text first to avoid JSON.parse on empty body
-      console.log("Raw response:", text);
+      const text = await res.text(); // Get raw text first
+      console.log("Raw API response:", text);
       let data = {};
       if (text) {
         data = JSON.parse(text);
+      } else {
+        console.warn("Empty response from API");
       }
-      if (!res.ok || data.error) {
-        throw new Error(data.error || `Error ${res.status}`);
+      if (!res.ok) {
+        throw new Error(data.error || `HTTP Error ${res.status}`);
       }
       setPreviewUrl(data.url);
       setIsBgRemoved(true);
