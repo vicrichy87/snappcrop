@@ -52,60 +52,60 @@ export default function Home() {
 
   // --- Human ---
   const humanRef = useRef(null);
-    useEffect(() => {
-      let mounted = true;
-    
-      const loadHuman = async () => {
-        if (typeof window === "undefined") return;
-    
-        try {
-          const [mod, tf] = await Promise.all([
-            import("/libs/human.esm.js"),
-            import("@tensorflow/tfjs"),
-          ]);
-    
-          const Human = mod.Human || mod.default;
-          if (typeof Human !== "function") {
-            throw new Error("Human.js export is not a constructor");
-          }
-    
-          const humanConfig = {
-            backend: "webgl",
-            cacheModels: true,
-            debug: false,
-            modelBasePath: `${window.location.origin}/models/`,
-            face: {
-              enabled: true,
-              detector: { rotation: true, maxDetected: 1 },
-              mesh: { enabled: true },
-              iris: { enabled: true },
-              emotion: { enabled: true },
-            },
-            body: { enabled: false },
-            hand: { enabled: false },
-            gesture: { enabled: false },
-            object: { enabled: false },
-          };
-    
-          const human = new Human(humanConfig);
-          await human.load();
-          console.log("✅ Human.js loaded successfully from /libs/human.esm.js");
-    
-          if (mounted) {
-            humanRef.current = human; // Set the human instance
-            setMessage("✅ Face detection models loaded successfully.");
-          }
-        } catch (error) {
-          console.error("❌ Human.js load error:", error);
-          setMessage(`⚠️ Failed to load face detection models: ${error.message}`);
+   useEffect(() => {
+    let mounted = true;
+  
+    const loadHuman = async () => {
+      if (typeof window === "undefined") return;
+  
+      try {
+        const [mod, tf] = await Promise.all([
+          import("/libs/human.esm.js"),
+          import("@tensorflow/tfjs"),
+        ]);
+  
+        const Human = mod.Human || mod.default;
+        if (typeof Human !== "function") {
+          throw new Error("Human.js export is not a constructor");
         }
-      };
-    
-      loadHuman();
-      return () => {
-        mounted = false;
-      };
-    }, []);
+  
+        const humanConfig = {
+          backend: "webgl",
+          cacheModels: true,
+          debug: false,
+          modelBasePath: `${window.location.origin}/models/`,
+          face: {
+            enabled: true,
+            detector: { rotation: true, maxDetected: 1 },
+            mesh: { enabled: true },
+            iris: { enabled: true },
+            emotion: { enabled: true },
+          },
+          body: { enabled: false },
+          hand: { enabled: false },
+          gesture: { enabled: false },
+          object: { enabled: false },
+        };
+  
+        const human = new Human(humanConfig);
+        await human.load();
+        console.log("✅ Human.js loaded successfully from /libs/human.esm.js");
+  
+        if (mounted) {
+          humanRef.current = human;
+          setMessage("✅ Face detection models loaded successfully.");
+        }
+      } catch (error) {
+        console.error("❌ Human.js load error:", error);
+        setMessage(`⚠️ Failed to load face detection models: ${error.message}`);
+      }
+    };
+  
+    loadHuman();
+    return () => {
+      mounted = false;
+    };
+  }, []);  
 
   // ---------------- Helpers ----------------
   const fadeUp = {
@@ -151,55 +151,63 @@ export default function Home() {
   };
 
   // ---------------- File Upload + Face Detection ----------------
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setMessage("");
-    setIsBgRemoved(false);
-    setDownloadUrl(null);
-    setFile(file);
+  const handleFileChange = () => {
+    return new Promise((resolve) => {
+      const file = inputRef.current?.files?.[0];
+      if (!file) return resolve();
   
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      setPreviewUrl(event.target.result);
-      const img = new Image();
-      img.src = event.target.result;
-      await new Promise((resolve) => (img.onload = resolve));
+      setMessage("");
+      setIsBgRemoved(false);
+      setDownloadUrl(null);
+      setFile(file);
   
-      const human = humanRef.current;
-      if (!human) {
-        setMessage("⚠️ Face detection model not loaded. Please wait and try again.");
-        return;
-      }
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        setPreviewUrl(event.target.result);
+        const img = new Image();
+        img.src = event.target.result;
   
-      try {
-        const result = await human.detect(img);
-        if (result.face.length > 0) {
-          const face = result.face[0];
-          const box = face.box; // Assuming box contains x, y, width, height
-          const padding = box.width * 0.5;
-          setCrop({ x: box.x - padding / 2, y: box.y - padding / 2 });
-          setZoom(600 / (box.width + padding));
-          const landmarks = face.landmarks; // Adjust based on Human.js output
-          const isNeutral = checkNeutralExpression(landmarks);
-          const hasShadows = checkShadows(img, box);
-          setIsCompliant(isNeutral && !hasShadows);
-          setMessage(
-            `✅ Face detected, crop adjusted. ${isCompliant ? "Image complies." : "⚠️ Warning: Non-neutral expression or shadows detected."}`
-          );
-        } else {
-          setMessage("⚠️ No face detected. Please adjust manually.");
-        }
-      } catch (error) {
-        console.error("Face detection error:", error);
-        setMessage(`⚠️ Face detection failed. (Error: ${error.message})`);
-      }
-    };
-    reader.readAsDataURL(file);
+        img.onload = () => {
+          const human = humanRef.current;
+          if (!human) {
+            setMessage("⚠️ Face detection model not loaded. Please wait and try again.");
+            return resolve();
+          }
+  
+          human.detect(img).then((result) => {
+            if (result.face.length > 0) {
+              const face = result.face[0];
+              const box = face.box;
+              const padding = box.width * 0.5;
+              setCrop({ x: box.x - padding / 2, y: box.y - padding / 2 });
+              setZoom(600 / (box.width + padding));
+              const landmarks = face.landmarks;
+              const isNeutral = checkNeutralExpression(landmarks);
+              const hasShadows = checkShadows(img, box);
+              setIsCompliant(isNeutral && !hasShadows);
+              setMessage(
+                `✅ Face detected, crop adjusted. ${isNeutral ? "Image complies." : "⚠️ Warning: Non-neutral expression or shadows detected."}`
+              );
+            } else {
+              setMessage("⚠️ No face detected. Please adjust manually.");
+            }
+            resolve();
+          }).catch((error) => {
+            console.error("Face detection error:", error);
+            setMessage(`⚠️ Face detection failed. (Error: ${error.message})`);
+            resolve();
+          });
+        };
+      };
+      reader.readAsDataURL(file);
+    });
   };
   
-  const triggerFile = () => inputRef.current?.click();
-
+  const triggerFile = () => {
+    inputRef.current?.click();
+    handleFileChange().catch((error) => console.error("Upload error:", error));
+  };
+   
   // ---------------- Background Removal ----------------
   const handleRemoveBackground = async () => {
     if (!file || !previewUrl)
