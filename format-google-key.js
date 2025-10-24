@@ -2,7 +2,7 @@
 import fs from "fs";
 
 // Path to your Google Cloud service account JSON key file
-const inputPath = "./google-key.json";
+const inputPath = "./snappcrop-d8588ed908e0.json";
 
 try {
   // Read and parse the JSON
