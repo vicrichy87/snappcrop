@@ -1,66 +1,54 @@
-import { supabase } from '../../lib/supabase';
-import formidable from 'formidable';
-import fs from 'fs';
+import formidable from "formidable";
+import fs from "fs";
+import { supabase } from "../../lib/supabase";
 
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: false, // ⛔ Important: formidable needs raw stream
   },
 };
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const form = formidable({ multiples: false });
-
   try {
-    const { files } = await new Promise((resolve, reject) => {
-      form.parse(req, (err, fields, files) => {
-        if (err) reject(err);
-        resolve({ fields, files });
-      });
-    });
-
+    // Parse form data
+    const form = formidable({});
+    const [fields, files] = await form.parse(req);
     const file = files.file?.[0];
+
     if (!file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+      return res.status(400).json({ error: "No file provided" });
     }
 
-    const session = await supabase.auth.getSession();
-    if (!session.data.session) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+    const fileBuffer = await fs.promises.readFile(file.filepath);
+    const fileName = `uploads/${Date.now()}-${file.originalFilename}`;
 
-    const fileBuffer = fs.readFileSync(file.filepath);
-    const filename = `passport-${Date.now()}-${file.originalFilename || 'photo.jpg'}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('passport-photos')
-      .upload(filename, fileBuffer, {
-        contentType: file.mimetype,
+    // Upload to Supabase Storage bucket
+    const { data, error } = await supabase.storage
+      .from("snappcrop-uploads") // ✅ replace with your actual bucket name
+      .upload(fileName, fileBuffer, {
+        contentType: file.mimetype || "image/jpeg",
+        upsert: false,
       });
 
-    if (uploadError) {
-      throw uploadError;
+    if (error) {
+      console.error("Supabase upload error:", error);
+      return res.status(500).json({ error: "Failed to upload to storage" });
     }
 
-    const { error: dbError } = await supabase
-      .from('photos')
-      .insert([{ user_id: session.data.session.user.id, filename }]);
+    // Generate public URL
+    const { data: publicUrlData } = supabase.storage
+      .from("snappcrop-uploads")
+      .getPublicUrl(fileName);
 
-    if (dbError) {
-      throw dbError;
-    }
-
-    const { data } = supabase.storage
-      .from('passport-photos')
-      .getPublicUrl(filename);
-
-    return res.status(200).json({ url: data.publicUrl });
+    return res.status(200).json({
+      url: publicUrlData.publicUrl,
+    });
   } catch (error) {
-    console.error('Upload error:', error);
-    return res.status(500).json({ error: 'Failed to upload image' });
+    console.error("Upload API error:", error);
+    return res.status(500).json({ error: error.message });
   }
 }
