@@ -52,28 +52,42 @@ export default function Home() {
 
   // --- Human ---
   const humanRef = useRef(null);
-    useEffect(() => {
+  useEffect(() => {
     let mounted = true;
   
     const loadHuman = async () => {
       if (typeof window === "undefined") return;
   
       try {
-        const [mod, tf] = await Promise.all([
-          import("/libs/human.esm.js"),
-          import("@tensorflow/tfjs"),
-        ]);
+        // ✅ Load TensorFlow.js first
+        await import("@tensorflow/tfjs");
   
-        // ✅ Handle both export styles (class or instance)
-        const Human = mod.Human || mod.default;
-        const isConstructor = typeof Human === "function";
+        // ✅ Dynamically inject Human.js as a module script
+        await new Promise((resolve, reject) => {
+          if (window.Human) return resolve(); // Already loaded once
+          const script = document.createElement("script");
+          script.src = "/libs/human.esm.js"; // served from /public/libs/
+          script.type = "module";
+          script.onload = resolve;
+          script.onerror = (err) => {
+            console.error("Failed to load Human.js script", err);
+            reject(err);
+          };
+          document.head.appendChild(script);
+        });
   
-        // ✅ Define config FIRST, passed into constructor
+        // ✅ Wait for global Human to initialize
+        await new Promise((r) => setTimeout(r, 300));
+  
+        const Human = window.Human;
+        if (!Human) throw new Error("Human.js did not load correctly (window.Human missing)");
+  
+        // ✅ Define config FIRST
         const humanConfig = {
           backend: "webgl",
           cacheModels: true,
           debug: false,
-          modelBasePath: `${window.location.origin}/models/`, // ✅ absolute path
+          modelBasePath: `${window.location.origin}/models/`, // Absolute URL
           face: {
             enabled: true,
             detector: { rotation: true, maxDetected: 1 },
@@ -84,12 +98,13 @@ export default function Home() {
           body: { enabled: false },
           hand: { enabled: false },
           gesture: { enabled: false },
-          object: { enabled: false }, // prevent missing submodel error
+          object: { enabled: false },
         };
   
-        const human = isConstructor ? new Human(humanConfig) : Human;
-  
+        // ✅ Instantiate Human safely
+        const human = new Human(humanConfig);
         await human.load();
+  
         console.log("✅ Human.js loaded successfully from /libs/human.esm.js");
   
         if (mounted) {
