@@ -773,7 +773,36 @@ export default function Home() {
         }
         .animate-blob { animation: blob 15s infinite; }
         .animation-delay-2000 { animation-delay: 2s; }
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+          animation: spin-slow 3s linear infinite;
+        }        
       `}</style>
+
+        {/* Global Loading Overlay */}
+        {loading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-white/70 backdrop-blur-sm flex flex-col items-center justify-center"
+          >
+            {/* Fancy gradient spinner */}
+            <div className="relative w-16 h-16 mb-4">
+              <div className="absolute inset-0 rounded-full border-4 border-sky-200"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-sky-600 animate-spin"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-transparent border-b-indigo-500 animate-spin-slow"></div>
+            </div>
+        
+            <p className="text-sky-700 font-semibold text-sm animate-pulse">
+              ✨ Processing your photo, please wait...
+            </p>
+          </motion.div>
+        )}
+
     </main>
   );
 }
