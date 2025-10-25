@@ -49,7 +49,13 @@ export default function Register() {
         ]);
       }
 
-      alert("✅ Registration successful! Please check your email to verify your account.");
+      const confirmed = window.confirm(
+        "✅ Registration successful! Please check your email to verify your account."
+      );
+      
+      if (confirmed) {
+        window.location.href = "/"; // ✅ Redirect to home after user clicks OK
+      }
       setForm({
         full_name: "",
         email: "",
