@@ -28,9 +28,6 @@ export const dynamic = "force-static";
 export const revalidate = 0;
 
 export default function Home() {
-  
-  const processSectionRef = useRef(null);
-
   // ---------------- State Management ----------------
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -174,14 +171,7 @@ export default function Home() {
           console.error("Face detection error:", error);
           setMessage(`⚠️ Face analysis failed. (${error.message})`);
         }
-
-        // 👇 Smooth scroll to processing section after image loads
-        setTimeout(() => {
-          if (processSectionRef.current) {
-            processSectionRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-          }
-        }, 600); // optional short delay for smoother transition
-
+  
         resolve();
       };
   
@@ -200,6 +190,7 @@ export default function Home() {
     handleFileChange().catch((error) => console.error("Upload error:", error));
   };
 
+  // ---------------- Background Removal ----------------
   // ---------------- Background Removal ----------------
   const handleRemoveBackground = async () => {
     if (!file || !previewUrl) {
@@ -488,7 +479,6 @@ export default function Home() {
 
       {/* Upload & Crop Section */}
       <motion.section
-        ref={processSectionRef}
         initial="hidden"
         animate="show"
         variants={{ show: { transition: { staggerChildren: 0.15 } } }}
