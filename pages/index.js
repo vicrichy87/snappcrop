@@ -55,6 +55,7 @@ export default function Home() {
 
   const [showDownloadPrompt, setShowDownloadPrompt] = useState(false);
 
+  const [hasUploaded, setHasUploaded] = useState(false);
 
 
   // ---------------- Load Google Vision API ----------------
@@ -114,6 +115,7 @@ export default function Home() {
       reader.onload = async (event) => {
         const imageBase64 = event.target.result;
         setPreviewUrl(imageBase64);
+        setHasUploaded(true);
   
         try {
           // Step 1: Upload to Supabase or temporary API to get public URL
@@ -429,10 +431,12 @@ export default function Home() {
 
         {/* Right side - Process Flow Animation */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1 }}
-          className="relative w-full max-w-[420px] rounded-3xl shadow-2xl border border-sky-100 bg-gradient-to-br from-white to-sky-50 p-8 flex flex-col items-center justify-center overflow-hidden"
+          initial={{ opacity: 0, y: 30, scale: 0.95 }}
+          animate={hasUploaded ? { opacity: 0, scale: 0.9, y: -20 } : { opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeInOut" }}
+          className={`relative w-full max-w-[420px] rounded-3xl shadow-2xl border border-sky-100 bg-gradient-to-br from-white to-sky-50 p-8 flex flex-col items-center justify-center overflow-hidden transition-all duration-700 ${
+            hasUploaded ? "pointer-events-none" : ""
+          }`}
         >
           {/* Animated gradient blobs */}
           <div className="absolute -left-10 -top-10 w-40 h-40 bg-sky-200/40 rounded-full blur-3xl animate-blob"></div>
