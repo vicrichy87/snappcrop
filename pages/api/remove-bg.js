@@ -4,7 +4,7 @@ import FormData from "form-data";
 
 export const config = {
   api: {
-    bodyParser: false, // Needed for Formidable
+    bodyParser: false, // Formidable needs this
   },
 };
 
@@ -17,8 +17,9 @@ export default async function handler(req, res) {
     let imageUrl = null;
     let uploadedFile = null;
 
-    // 🔹 Detect if it's JSON (frontend sending { imageUrl })
     const contentType = req.headers["content-type"] || "";
+
+    // 🔹 Support both JSON and FormData
     if (contentType.includes("application/json")) {
       const buffers = [];
       for await (const chunk of req) buffers.push(chunk);
@@ -26,7 +27,6 @@ export default async function handler(req, res) {
       const body = JSON.parse(bodyString || "{}");
       imageUrl = body.imageUrl;
     } else {
-      // 🔹 Otherwise, handle FormData upload
       const form = formidable({ multiples: false, keepExtensions: true });
       await new Promise((resolve, reject) => {
         form.parse(req, (err, fields, files) => {
@@ -42,41 +42,43 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "No image provided" });
     }
 
-    // ✅ Prepare form for remove.bg API
+    // ✅ Build request for remove.bg
     const formData = new FormData();
 
     if (uploadedFile) {
       const fileBuffer = await fs.promises.readFile(uploadedFile.filepath);
       formData.append("image_file", fileBuffer, uploadedFile.originalFilename);
     } else if (imageUrl) {
-      console.log("Sending to remove.bg:", imageUrl);
+      console.log("✅ Sending to remove.bg:", imageUrl);
       formData.append("image_url", imageUrl);
     }
 
-    // 🌐 Call remove.bg
+    // ✅ include form-data headers (critical fix)
+    const headers = formData.getHeaders({
+      "X-Api-Key": process.env.REMOVE_BG_API_KEY,
+    });
+
     const removeBgResponse = await fetch("https://api.remove.bg/v1.0/removebg", {
       method: "POST",
-      headers: {
-        "X-Api-Key": process.env.REMOVE_BG_API_KEY,
-      },
+      headers,
       body: formData,
     });
 
-    const arrayBuffer = await removeBgResponse.arrayBuffer();
     if (!removeBgResponse.ok) {
-      const text = Buffer.from(arrayBuffer).toString();
+      const text = await removeBgResponse.text();
       console.error("❌ Remove.bg error:", text);
       return res.status(removeBgResponse.status).json({ error: text });
     }
 
-    // ✅ Convert response to Base64 image
-    const base64Image = Buffer.from(arrayBuffer).toString("base64");
-    res.status(200).json({
+    const resultBuffer = await removeBgResponse.arrayBuffer();
+    const base64Image = Buffer.from(resultBuffer).toString("base64");
+
+    return res.status(200).json({
       success: true,
       image: `data:image/png;base64,${base64Image}`,
     });
   } catch (error) {
     console.error("❌ remove-bg handler error:", error);
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 }
