@@ -61,6 +61,8 @@ export default function Home() {
 
   const [showLogin, setShowLogin] = useState(false);
 
+  const [loginSuccess, setLoginSuccess] = useState(false);
+  const [loginCountdown, setLoginCountdown] = useState(3);
 
   // ---------------- Load Google Vision API ----------------
   useEffect(() => {
@@ -761,103 +763,151 @@ export default function Home() {
         </p>
       </section>
 
-      {/* ✅ Login Modal */}
+      {/* ✅ LOGIN MODAL */}
       <AnimatePresence>
         {showLogin && (
-          <>
-            {/* Overlay */}
+          <motion.div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
             <motion.div
-              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowLogin(false)}
-            />
-      
-            {/* Modal */}
-            <motion.div
-              initial={{ y: 100, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 80, opacity: 0 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              className="fixed z-50 inset-0 flex items-center justify-center px-4"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 150, damping: 12 }}
+              className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-[90%] text-center border border-blue-100 relative"
             >
-              <div className="relative w-full max-w-md bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-sky-100 p-8 text-center">
-                <button
-                  onClick={() => setShowLogin(false)}
-                  className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 text-xl"
-                >
-                  ✕
-                </button>
+              {/* Close Button */}
+              <button
+                onClick={() => setShowLogin(false)}
+                className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 text-xl"
+              >
+                ✕
+              </button>
       
-                <h2 className="text-3xl font-bold text-sky-700 mb-6">Login</h2>
+              {/* Logo */}
+              <div className="mx-auto mb-4 w-20 h-20 rounded-full bg-gradient-to-r from-sky-100 to-indigo-100 flex items-center justify-center shadow-inner">
+                <img src="/logo.png" alt="Snappcrop" className="w-12 h-12 object-contain" />
+              </div>
       
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    alert("✅ Logged in successfully!");
-                    setShowLogin(false);
-                  }}
-                  className="flex flex-col gap-4 text-left"
-                >
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">Email</label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="you@example.com"
-                      className="w-full border border-sky-200 rounded-full px-4 py-2 focus:ring-2 focus:ring-sky-400 outline-none"
-                    />
-                  </div>
+              <h2 className="text-2xl font-bold text-sky-800 mb-2">Welcome Back</h2>
+              <p className="text-slate-600 mb-6 text-sm">Login to continue using Snappcrop</p>
       
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">Password</label>
-                    <input
-                      type="password"
-                      required
-                      placeholder="••••••••"
-                      className="w-full border border-sky-200 rounded-full px-4 py-2 focus:ring-2 focus:ring-sky-400 outline-none"
-                    />
-                  </div>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const email = e.target.email.value;
+                  const password = e.target.password.value;
       
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    type="submit"
-                    className="mt-4 px-8 py-3 bg-gradient-to-r from-sky-600 to-indigo-600 text-white font-semibold rounded-full shadow-md hover:from-sky-700 hover:to-indigo-700 transition-all"
-                  >
-                    Sign In
-                  </motion.button>
-                </form>
+                  try {
+                    const { data, error } = await supabase.auth.signInWithPassword({
+                      email,
+                      password,
+                    });
       
-                <p className="mt-6 text-sm text-slate-600">
-                  Don’t have an account?{" "}
-                  <a
-                    href="/register"
-                    className="text-sky-600 hover:text-indigo-600 font-semibold underline"
-                  >
-                    Click here to register
-                  </a>
-                </p>
-                
-                {/* Google Login Button */}
+                    if (error) throw error;
+      
+                    // ✅ Show success modal
+                    setLoginSuccess(true);
+                    let seconds = 3;
+                    const timer = setInterval(() => {
+                      seconds -= 1;
+                      setLoginCountdown(seconds);
+                      if (seconds <= 0) {
+                        clearInterval(timer);
+                        setShowLogin(false);
+                        window.location.href = "/";
+                      }
+                    }, 1000);
+                  } catch (err) {
+                    alert(`❌ ${err.message}`);
+                  }
+                }}
+                className="text-left"
+              >
+                <label className="block text-sm font-semibold text-slate-700 mb-1">
+                  Email
+                </label>
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  placeholder="you@example.com"
+                  className="w-full border border-sky-200 rounded-full px-4 py-2 mb-3 focus:ring-2 focus:ring-sky-400 outline-none"
+                />
+      
+                <label className="block text-sm font-semibold text-slate-700 mb-1">
+                  Password
+                </label>
+                <input
+                  name="password"
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  className="w-full border border-sky-200 rounded-full px-4 py-2 mb-4 focus:ring-2 focus:ring-sky-400 outline-none"
+                />
+      
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.97 }}
-                  onClick={() => alert("🌐 Google login coming soon!")}
-                  className="mt-6 w-full flex items-center justify-center gap-3 bg-white border border-sky-200 rounded-full px-6 py-3 shadow-md hover:shadow-lg transition-all"
+                  type="submit"
+                  className="w-full py-3 mt-2 rounded-full font-semibold text-white bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 shadow-md"
                 >
-                  <img
-                    src="https://www.svgrepo.com/show/475656/google-color.svg"
-                    alt="Google logo"
-                    className="w-5 h-5"
-                  />
-                  <span className="font-semibold text-slate-700">Login with Google</span>
+                  Login
                 </motion.button>
-              </div>
+              </form>
+      
+              <p className="mt-6 text-sm text-slate-600">
+                Don’t have an account?{" "}
+                <a
+                  href="/register"
+                  className="text-sky-600 hover:text-indigo-600 font-semibold underline"
+                >
+                  Click here to register
+                </a>
+              </p>
+      
+              {/* Google Login Button */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => alert("🌐 Google login coming soon!")}
+                className="mt-6 w-full flex items-center justify-center gap-3 bg-white border border-sky-200 rounded-full px-6 py-3 shadow-md hover:shadow-lg transition-all"
+              >
+                <img
+                  src="https://www.svgrepo.com/show/475656/google-color.svg"
+                  alt="Google logo"
+                  className="w-5 h-5"
+                />
+                <span className="font-semibold text-slate-700">Login with Google</span>
+              </motion.button>
             </motion.div>
-          </>
+          </motion.div>
         )}
       </AnimatePresence>
+      
+      {/* ✅ SUCCESS MODAL */}
+      {loginSuccess && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 150, damping: 10 }}
+            className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-[90%] text-center border border-blue-100"
+          >
+            <div className="mx-auto mb-4 w-20 h-20 rounded-full bg-gradient-to-r from-sky-100 to-indigo-100 flex items-center justify-center">
+              <span className="text-5xl">✅</span>
+            </div>
+            <h2 className="text-2xl font-bold text-sky-800 mb-2">Login Successful!</h2>
+            <p className="text-slate-600 mb-4">Welcome back to Snappcrop.</p>
+            <p className="text-sm text-gray-500">
+              Redirecting to home in {loginCountdown} seconds...
+            </p>
+          </motion.div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="text-center pb-10 text-gray-500 text-sm">
