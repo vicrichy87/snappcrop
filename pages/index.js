@@ -483,18 +483,24 @@ export default function Home() {
             </div>
           ) : (
             <>
-              <div className="relative w-full h-[400px] rounded-2xl overflow-hidden border border-blue-100">
-                <Cropper
-                  image={previewUrl}
-                  crop={crop}
-                  zoom={zoom}
-                  aspect={1}
-                  onCropChange={setCrop}
-                  onZoomChange={setZoom}
-                  onCropComplete={onCropComplete}
-                  showGrid={false}
-                />
-              </div>
+               {/* Live color preview background */}
+                <div
+                  className="relative w-full h-[400px] rounded-2xl overflow-hidden border border-blue-100 transition-colors duration-500"
+                  style={{
+                    backgroundColor: bgColor === "red" ? "#ff0000" : "#ffffff",
+                  }}
+                >
+                  <Cropper
+                    image={previewUrl}
+                    crop={crop}
+                    zoom={zoom}
+                    aspect={1}
+                    onCropChange={setCrop}
+                    onZoomChange={setZoom}
+                    onCropComplete={onCropComplete}
+                    showGrid={false}
+                  />
+                </div>
 
               {/* Options: Size + Background */}
               <div className="flex flex-col sm:flex-row justify-center gap-4 flex-wrap mt-6 items-center">
