@@ -519,25 +519,34 @@ export default function Home() {
           </motion.div>
         </div>
         
-        {/* Right side - Process Flow Animation */}
+        {/* ✅ Right side - Process Flow Animation (Refined & Compact) */}
         <motion.div
           initial={{ opacity: 0, y: 30, scale: 0.95, height: "auto" }}
           animate={
             hasUploaded
-              ? { opacity: 0, scale: 0.9, y: -20, height: 0, marginTop: 0, marginBottom: 0, padding: 0 }
+              ? {
+                  opacity: 0,
+                  scale: 0.9,
+                  y: -20,
+                  height: 0,
+                  marginTop: 0,
+                  marginBottom: 0,
+                  padding: 0,
+                }
               : { opacity: 1, scale: 1, y: 0, height: "auto" }
           }
           transition={{ duration: 0.8, ease: "easeInOut" }}
-          className={`relative w-full max-w-[420px] overflow-hidden rounded-3xl shadow-2xl border border-sky-100 bg-gradient-to-br from-white to-sky-50 p-8 flex flex-col items-center justify-center transition-all duration-700 ${
+          className={`relative w-full max-w-[320px] overflow-hidden rounded-2xl shadow-xl border border-sky-100 bg-gradient-to-br from-white to-sky-50 p-6 flex flex-col items-center justify-center transition-all duration-700 ${
             hasUploaded ? "pointer-events-none" : ""
           }`}
+          style={{ marginTop: "1rem" }}
         >
-          {/* Animated gradient blobs */}
-          <div className="absolute -left-10 -top-10 w-40 h-40 bg-sky-200/40 rounded-full blur-3xl animate-blob"></div>
-          <div className="absolute -right-10 -bottom-10 w-52 h-52 bg-indigo-200/30 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
+          {/* ✨ Subtle animated blobs (reduced size + intensity) */}
+          <div className="absolute -left-6 -top-6 w-28 h-28 bg-sky-200/40 rounded-full blur-2xl animate-blob"></div>
+          <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-indigo-200/30 rounded-full blur-2xl animate-blob animation-delay-2000"></div>
         
-          {/* Step circles */}
-          <div className="relative z-10 flex flex-col gap-8 items-center justify-center w-full">
+          {/* 🚀 Step Flow */}
+          <div className="relative z-10 flex flex-col gap-6 items-center justify-center w-full">
             {[
               { icon: <FaCloudUploadAlt />, title: "Upload", color: "from-sky-500 to-blue-500" },
               { icon: <FaMagic />, title: "Remove Background", color: "from-indigo-500 to-purple-500" },
@@ -545,31 +554,33 @@ export default function Home() {
             ].map((step, i) => (
               <motion.div
                 key={step.title}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.3 }}
+                transition={{ delay: i * 0.2, duration: 0.6 }}
                 className="flex flex-col items-center"
               >
                 <div
-                  className={`w-16 h-16 flex items-center justify-center rounded-full bg-gradient-to-br ${step.color} text-white shadow-lg`}
+                  className={`w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-br ${step.color} text-white shadow-md`}
                 >
                   {step.icon}
                 </div>
-                <p className="mt-2 font-semibold text-sky-700">{step.title}</p>
+                <p className="mt-2 font-semibold text-sky-700 text-sm">{step.title}</p>
+        
+                {/* Connector line (smaller & cleaner) */}
                 {i < 2 && (
                   <motion.div
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: 1 }}
-                    transition={{ delay: i * 0.3 + 0.2, duration: 0.8 }}
-                    className="w-1 h-8 bg-gradient-to-b from-sky-400 to-indigo-400 rounded-full origin-top"
+                    initial={{ scaleY: 0 }}
+                    animate={{ scaleY: 1 }}
+                    transition={{ delay: i * 0.3 + 0.2, duration: 0.6 }}
+                    className="w-[2px] h-6 bg-gradient-to-b from-sky-400 to-indigo-400 rounded-full origin-top"
                   ></motion.div>
                 )}
               </motion.div>
             ))}
           </div>
         
-          <p className="mt-6 text-sm text-gray-600 italic text-center">
-            Guided AI process — from upload to passport perfection
+          <p className="mt-4 text-xs text-gray-600 italic text-center px-3">
+            Guided process — from upload to passport perfection
           </p>
         </motion.div>
       </section>
