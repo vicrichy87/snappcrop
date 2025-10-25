@@ -617,14 +617,44 @@ export default function Home() {
                     <div className="flex justify-center gap-3">
                       {/* Save Option */}
                       <button
-                        onClick={() => {
-                          const link = document.createElement("a");
-                          link.href = downloadUrl;
-                          link.download = "snappcrop-passport-photo.jpg";
-                          document.body.appendChild(link);
-                          link.click();
-                          document.body.removeChild(link);
-                          setShowDownloadPrompt(false);
+                        onClick={async () => {
+                          try {
+                            // If File System Access API available (Desktop)
+                            if (window.showSaveFilePicker) {
+                              const response = await fetch(downloadUrl);
+                              const blob = await response.blob();
+                              const handle = await window.showSaveFilePicker({
+                                suggestedName: "snappcrop-passport-photo.jpg",
+                                types: [{ description: "JPEG image", accept: { "image/jpeg": [".jpg"] } }],
+                              });
+                              const writable = await handle.createWritable();
+                              await writable.write(blob);
+                              await writable.close();
+                              alert("✅ Photo saved successfully!");
+                            } else {
+                              // Fallback to Blob download
+                              const response = await fetch(downloadUrl);
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const link = document.createElement("a");
+                              link.href = url;
+                              link.download = "snappcrop-passport-photo.jpg";
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                              window.URL.revokeObjectURL(url);
+                        
+                              // Show iOS-specific hint
+                              if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+                                alert("📱 To save the photo: tap and hold the image, then choose 'Save to Photos'.");
+                              }
+                            }
+                          } catch (err) {
+                            console.error("Save failed:", err);
+                            alert("⚠️ Unable to save photo. Please try again.");
+                          } finally {
+                            setShowDownloadPrompt(false);
+                          }
                         }}
                         className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full text-sm font-medium shadow-md transition"
                       >
