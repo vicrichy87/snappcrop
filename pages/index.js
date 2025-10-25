@@ -56,7 +56,7 @@ export default function Home() {
 
   // ---------------- Load Google Vision API ----------------
   useEffect(() => {
-    setMessage("🧠 Initializing Google Vision for face analysis...");
+    setMessage("Initializing...");
   }, []);
 
   // ---------------- Helpers ----------------
