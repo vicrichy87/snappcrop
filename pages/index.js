@@ -50,6 +50,10 @@ export default function Home() {
   const imageRef = useRef(null);
   const humanRef = useRef(null);
 
+  const [selectedSize, setSelectedSize] = useState("us");
+  const [bgColor, setBgColor] = useState("white");
+
+
   // ---------------- Load Google Vision API ----------------
   useEffect(() => {
     setMessage("🧠 Initializing Google Vision for face analysis...");
@@ -248,7 +252,7 @@ export default function Home() {
       setLoading(false);
     }
   };
-  
+    
   // ---------------- Crop & Save ----------------
   const handleCropAndSave = async () => {
     if (!croppedAreaPixels || !previewUrl)
@@ -258,16 +262,41 @@ export default function Home() {
     setMessage("Processing...");
   
     try {
-      // Create an image element to draw the cropped area
       const img = new Image();
       img.src = previewUrl;
       await new Promise((resolve) => (img.onload = resolve));
   
-      // Create a canvas for the cropped result
+      // Define passport sizes (in pixels)
+      const sizeMap = {
+        us: { width: 600, height: 600 },
+        uk: { width: 827, height: 1063 },
+        eu: { width: 827, height: 1063 },
+        india: { width: 413, height: 531 },
+        china: { width: 390, height: 567 },
+        ghana: { width: 600, height: 600 },
+      };
+  
+      const { width, height } = sizeMap[selectedSize] || sizeMap.us;
+  
+      // Create canvas with selected background color
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
-      canvas.width = 600;
-      canvas.height = 600;
+      canvas.width = width;
+      canvas.height = height;
+  
+      // Fill background with chosen color
+      ctx.fillStyle = bgColor.toLowerCase() === "red" ? "#ff0000" : "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+  
+      // Draw cropped face centered in canvas
+      const scale = Math.min(
+        width / croppedAreaPixels.width,
+        height / croppedAreaPixels.height
+      );
+      const drawWidth = croppedAreaPixels.width * scale;
+      const drawHeight = croppedAreaPixels.height * scale;
+      const offsetX = (width - drawWidth) / 2;
+      const offsetY = (height - drawHeight) / 2;
   
       ctx.drawImage(
         img,
@@ -275,31 +304,29 @@ export default function Home() {
         croppedAreaPixels.y,
         croppedAreaPixels.width,
         croppedAreaPixels.height,
-        0,
-        0,
-        600,
-        600
+        offsetX,
+        offsetY,
+        drawWidth,
+        drawHeight
       );
   
-      // Convert cropped image to blob
+      // Convert to blob and upload
       const blob = await new Promise((resolve) =>
         canvas.toBlob(resolve, "image/jpeg", 0.95)
       );
   
-      // Upload to Supabase
       const fd = new FormData();
-      fd.append("file", blob, `snappcrop-${Date.now()}.jpg`);
+      fd.append("file", blob, `snappcrop-${selectedSize}-${bgColor}-${Date.now()}.jpg`);
   
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       const data = await res.json();
   
-      if (!res.ok || data.error) {
-        throw new Error(data.error || "Upload failed");
-      }
+      if (!res.ok || data.error) throw new Error(data.error || "Upload failed");
   
-      // ✅ Save complete
       setDownloadUrl(data.url);
-      setMessage("✅ Saved successfully!");
+      setMessage(
+        `✅ Saved successfully! (${selectedSize.toUpperCase()} size, ${bgColor} background)`
+      );
     } catch (error) {
       console.error("Save error:", error);
       setMessage(`⚠️ Error saving image: ${error.message}`);
@@ -307,6 +334,7 @@ export default function Home() {
       setLoading(false);
     }
   };
+
 
   // ---------------- UI ----------------
   return (
@@ -468,29 +496,67 @@ export default function Home() {
                 />
               </div>
 
-              <div className="flex justify-center gap-4 flex-wrap mt-6">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  onClick={handleRemoveBackground}
-                  disabled={loading || isBgRemoved}
-                  className={`px-6 py-3 rounded-full font-semibold text-white shadow-md transition ${
-                    isBgRemoved
-                      ? "bg-emerald-500 hover:bg-emerald-600"
-                      : "bg-sky-600 hover:bg-sky-700"
-                  }`}
-                >
-                  <FaMagic className="inline mr-2" />
-                  {isBgRemoved ? "Background Removed" : "Remove Background"}
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  onClick={handleCropAndSave}
-                  disabled={loading}
-                  className="px-6 py-3 rounded-full font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md"
-                >
-                  <FaDownload className="inline mr-2" /> Crop & Save
-                </motion.button>
+              {/* Options: Size + Background */}
+              <div className="flex flex-col sm:flex-row justify-center gap-4 flex-wrap mt-6 items-center">
+                {/* Choose Size */}
+                <div className="flex flex-col items-start">
+                  <label className="text-sm font-semibold text-slate-600 mb-1">
+                    Choose Size
+                  </label>
+                  <select
+                    value={selectedSize}
+                    onChange={(e) => setSelectedSize(e.target.value)}
+                    className="border border-sky-200 rounded-full px-4 py-2 text-sm bg-white focus:ring-2 focus:ring-sky-400"
+                  >
+                    <option value="us">US (2x2 inch / 600x600 px)</option>
+                    <option value="uk">UK (35x45 mm / 827x1063 px)</option>
+                    <option value="eu">EU (35x45 mm / 827x1063 px)</option>
+                    <option value="india">India (35x45 mm / 413x531 px)</option>
+                    <option value="china">China (33x48 mm / 390x567 px)</option>
+                    <option value="ghana">Ghana (2x2 inch / 600x600 px)</option>
+                  </select>
+                </div>
+              
+                {/* Choose Background Color */}
+                <div className="flex flex-col items-start">
+                  <label className="text-sm font-semibold text-slate-600 mb-1">
+                    Background Color
+                  </label>
+                  <select
+                    value={bgColor}
+                    onChange={(e) => setBgColor(e.target.value)}
+                    className="border border-sky-200 rounded-full px-4 py-2 text-sm bg-white focus:ring-2 focus:ring-sky-400"
+                  >
+                    <option value="white">White</option>
+                    <option value="red">Red</option>
+                  </select>
+                </div>
+              
+                {/* Action Buttons */}
+                <div className="flex gap-4 mt-2 sm:mt-6">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    onClick={handleRemoveBackground}
+                    disabled={loading || isBgRemoved}
+                    className={`px-6 py-3 rounded-full font-semibold text-white shadow-md transition ${
+                      isBgRemoved
+                        ? "bg-emerald-500 hover:bg-emerald-600"
+                        : "bg-sky-600 hover:bg-sky-700"
+                    }`}
+                  >
+                    <FaMagic className="inline mr-2" />
+                    {isBgRemoved ? "Background Removed" : "Remove Background"}
+                  </motion.button>
+              
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    onClick={handleCropAndSave}
+                    disabled={loading}
+                    className="px-6 py-3 rounded-full font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md"
+                  >
+                    <FaDownload className="inline mr-2" /> Crop & Save
+                  </motion.button>
+                </div>
               </div>
             </>
           )}
