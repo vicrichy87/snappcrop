@@ -429,13 +429,17 @@ export default function Home() {
             </a>
           </motion.div>
         </div>
-
+        
         {/* Right side - Process Flow Animation */}
         <motion.div
-          initial={{ opacity: 0, y: 30, scale: 0.95 }}
-          animate={hasUploaded ? { opacity: 0, scale: 0.9, y: -20 } : { opacity: 1, scale: 1, y: 0 }}
+          initial={{ opacity: 0, y: 30, scale: 0.95, height: "auto" }}
+          animate={
+            hasUploaded
+              ? { opacity: 0, scale: 0.9, y: -20, height: 0, marginTop: 0, marginBottom: 0, padding: 0 }
+              : { opacity: 1, scale: 1, y: 0, height: "auto" }
+          }
           transition={{ duration: 0.8, ease: "easeInOut" }}
-          className={`relative w-full max-w-[420px] rounded-3xl shadow-2xl border border-sky-100 bg-gradient-to-br from-white to-sky-50 p-8 flex flex-col items-center justify-center overflow-hidden transition-all duration-700 ${
+          className={`relative w-full max-w-[420px] overflow-hidden rounded-3xl shadow-2xl border border-sky-100 bg-gradient-to-br from-white to-sky-50 p-8 flex flex-col items-center justify-center transition-all duration-700 ${
             hasUploaded ? "pointer-events-none" : ""
           }`}
         >
@@ -475,7 +479,6 @@ export default function Home() {
             ))}
           </div>
         
-          {/* Caption */}
           <p className="mt-6 text-sm text-gray-600 italic text-center">
             Guided AI process — from upload to passport perfection
           </p>
