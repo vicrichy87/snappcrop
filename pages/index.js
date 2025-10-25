@@ -451,7 +451,58 @@ export default function Home() {
             background cleanup, and official dimensions in seconds.
           </motion.p>
 
-          {/* Buttons */}
+          {/* ✅ Top Navigation (moved About + Login here, just like About page) */}
+          <nav className="absolute top-0 right-0 w-full flex justify-end items-center px-6 lg:px-12 py-6 gap-3 z-50">
+            {/* If user not logged in */}
+            {!user && (
+              <>
+                <motion.a
+                  href="/about"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 250, damping: 12 }}
+                  className="inline-flex items-center justify-center px-6 py-2 bg-white/80 backdrop-blur-md text-sky-700 font-semibold border border-sky-200 rounded-full shadow-sm hover:shadow-md hover:bg-sky-50 transition text-sm"
+                >
+                  About
+                </motion.a>
+          
+                <motion.button
+                  onClick={() => setShowLogin(true)}
+                  whileHover={{ scale: 1.08, rotate: 1 }}
+                  whileTap={{ scale: 0.96 }}
+                  transition={{ type: "spring", stiffness: 250, damping: 12 }}
+                  className="relative inline-flex items-center justify-center px-6 py-2 font-semibold text-sm text-white rounded-full bg-gradient-to-r from-sky-600 via-indigo-600 to-purple-600 shadow-lg overflow-hidden"
+                >
+                  <span className="relative z-10">Login</span>
+                  <span className="absolute inset-0 rounded-full bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 blur-md opacity-75 animate-pulse-slow"></span>
+                  <span className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-shine"></span>
+                </motion.button>
+              </>
+            )}
+          
+            {/* If user logged in */}
+            {user && (
+              <div className="flex items-center gap-3">
+                <div className="px-6 py-2 bg-white/80 backdrop-blur-md border border-sky-100 rounded-full text-sky-800 font-semibold shadow-sm">
+                  Welcome, {user.displayName?.charAt(0).toUpperCase() + user.displayName?.slice(1)}
+                </div>
+          
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    setUser(null);
+                  }}
+                  className="px-6 py-2 rounded-full font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-md transition text-sm"
+                >
+                  Logout
+                </motion.button>
+              </div>
+            )}
+          </nav>
+          
+          {/* Buttons Section — now only the selfie upload remains here */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -465,53 +516,7 @@ export default function Home() {
             >
               <FaCloudUploadAlt /> Take a Selfie!
             </button>
-          
-            {/* ✅ If NOT logged in: show About + Login */}
-            {!user && (
-              <>
-                <a
-                  href="/about"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 w-full sm:w-auto bg-white text-sky-700 border border-sky-200 rounded-full font-semibold shadow-sm hover:shadow-md hover:bg-sky-50 transition text-sm sm:text-base"
-                >
-                  About
-                </a>
-          
-                <motion.button
-                  onClick={() => setShowLogin(true)}
-                  whileHover={{ scale: 1.08, rotate: 1 }}
-                  whileTap={{ scale: 0.96 }}
-                  transition={{ type: "spring", stiffness: 250, damping: 12 }}
-                  className="relative inline-flex items-center justify-center gap-2 px-6 py-3 w-full sm:w-auto font-semibold text-sm sm:text-base text-white rounded-full bg-gradient-to-r from-sky-600 via-indigo-600 to-purple-600 shadow-lg overflow-hidden"
-                >
-                  <span className="relative z-10">Login</span>
-                  <span className="absolute inset-0 rounded-full bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 blur-md opacity-75 animate-pulse-slow"></span>
-                  <span className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-shine"></span>
-                </motion.button>
-              </>
-            )}
-          
-            {/* ✅ If logged in: show Welcome + Logout */}
-            {user && (
-              <div className="flex flex-col sm:flex-row items-center gap-3">
-                <div className="px-6 py-3 bg-white/80 backdrop-blur-md border border-sky-100 rounded-full text-sky-800 font-semibold shadow-sm">
-                  Welcome, {user.displayName?.charAt(0).toUpperCase() + user.displayName?.slice(1)}
-                </div>
-          
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={async () => {
-                    await supabase.auth.signOut();
-                    setUser(null);
-                  }}
-                  className="px-6 py-3 w-full sm:w-auto rounded-full font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-md transition text-sm sm:text-base"
-                >
-                  Logout
-                </motion.button>
-              </div>
-            )}
           </motion.div>
-
         </div>
         
         {/* Right side - Process Flow Animation */}
