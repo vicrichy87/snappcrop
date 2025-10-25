@@ -121,6 +121,27 @@ export default function Home() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    // Listen for message from popup (auth callback)
+    function handleMessage(e) {
+      // SECURITY: only accept messages from same origin
+      if (e.origin !== window.location.origin) return;
+      const { type } = e.data || {};
+      if (type === "supabase-auth-success") {
+        // refresh UI: reload or fetch user
+        window.location.reload();
+      }
+      if (type === "supabase-auth-error") {
+        console.error("Google login error:", e.data.error);
+        // Optionally show a toast or message
+        alert("Google login failed: " + (e.data.error || "unknown error"));
+      }
+    }
+  
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
   // ---------------- Helpers ----------------
   const fadeUp = {
     hidden: { opacity: 0, y: 30 },
@@ -149,7 +170,55 @@ export default function Home() {
     }
     return darkPixels / (box.width * box.height) > 0.1;
   };
-
+  
+  // call this from onClick of your "Login with Google" button
+  async function signInWithGooglePopup() {
+    try {
+      // Ask Supabase for the OAuth redirect URL (v2 returns data.url)
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          // IMPORTANT: callback page we created earlier
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+  
+      if (error) throw error;
+  
+      // data.url is the full Google/Supabase authorize URL
+      const url = data?.url;
+      if (!url) throw new Error("No auth URL returned");
+  
+      // Open a centered popup
+      const width = 500;
+      const height = 650;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2.5;
+  
+      const popup = window.open(
+        url,
+        "snappcrop-google-auth",
+        `width=${width},height=${height},left=${left},top=${top},resizable,scrollbars=yes,status=1`
+      );
+  
+      if (!popup) {
+        throw new Error("Popup blocked. Please allow popups for this site.");
+      }
+  
+      // Optional fallback: if popup closed without postMessage, poll and reload
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          // reload to reflect possible new session
+          window.location.reload();
+        }
+      }, 500);
+    } catch (err) {
+      console.error("Google sign-in popup error:", err);
+      alert("Google login failed: " + (err.message || err));
+    }
+  }
+  
   // ---------------- File Upload + Vision API Face Detection ----------------
   const handleFileChange = () => {
     return new Promise((resolve) => {
@@ -954,18 +1023,14 @@ export default function Home() {
                 </a>
               </p>
       
-              {/* Google Login Button */}
+              {/* Google Login Button */}              
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.97 }}
-                onClick={() => alert("🌐 Google login coming soon!")}
-                className="mt-6 w-full flex items-center justify-center gap-3 bg-white border border-sky-200 rounded-full px-6 py-3 shadow-md hover:shadow-lg transition-all"
+                onClick={signInWithGooglePopup}
+                className="mt-4 w-full flex items-center justify-center gap-3 bg-white border border-sky-200 rounded-full px-6 py-3 shadow-md hover:shadow-lg transition-all"
               >
-                <img
-                  src="https://www.svgrepo.com/show/475656/google-color.svg"
-                  alt="Google logo"
-                  className="w-5 h-5"
-                />
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google logo" className="w-5 h-5" />
                 <span className="font-semibold text-slate-700">Login with Google</span>
               </motion.button>
             </motion.div>
