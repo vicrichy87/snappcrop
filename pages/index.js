@@ -248,22 +248,27 @@ export default function Home() {
       setLoading(false);
     }
   };
-
-
+  
   // ---------------- Crop & Save ----------------
   const handleCropAndSave = async () => {
     if (!croppedAreaPixels || !previewUrl)
       return setMessage("Please crop your image first.");
+  
     setLoading(true);
     setMessage("Processing...");
+  
     try {
+      // Create an image element to draw the cropped area
       const img = new Image();
       img.src = previewUrl;
-      await new Promise((r) => (img.onload = r));
+      await new Promise((resolve) => (img.onload = resolve));
+  
+      // Create a canvas for the cropped result
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       canvas.width = 600;
       canvas.height = 600;
+  
       ctx.drawImage(
         img,
         croppedAreaPixels.x,
@@ -275,28 +280,29 @@ export default function Home() {
         600,
         600
       );
-      const blob = await new Promise((r) => canvas.toBlob(r, "image/jpeg", 0.95));
+  
+      // Convert cropped image to blob
+      const blob = await new Promise((resolve) =>
+        canvas.toBlob(resolve, "image/jpeg", 0.95)
+      );
+  
+      // Upload to Supabase
       const fd = new FormData();
       fd.append("file", blob, `snappcrop-${Date.now()}.jpg`);
+  
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       const data = await res.json();
-      if (!res.ok || data.error) throw new Error(data.error || "Upload failed");
-
-      const session = await getSession();
-      if (!session?.user?.id) {
-        setMessage("Please log in to save your photo.");
-        return;
+  
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "Upload failed");
       }
-      await supabase.from("photos").insert({
-        user_id: session.user.id,
-        filename: data.url.split("/").pop(),
-      });
-
+  
+      // ✅ Save complete
       setDownloadUrl(data.url);
       setMessage("✅ Saved successfully!");
     } catch (error) {
       console.error("Save error:", error);
-      setMessage("⚠️ Error saving image.");
+      setMessage(`⚠️ Error saving image: ${error.message}`);
     } finally {
       setLoading(false);
     }
