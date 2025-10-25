@@ -427,53 +427,53 @@ export default function Home() {
           </motion.div>
         </div>
 
-        {/* Right side - animated hero */}
+        {/* Right side - Process Flow Animation */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8 }}
-          className="relative w-full max-w-[420px] aspect-[16/10] bg-gradient-to-br from-white to-sky-50 rounded-3xl shadow-2xl border border-sky-100 overflow-hidden flex items-center justify-center"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1 }}
+          className="relative w-full max-w-[420px] rounded-3xl shadow-2xl border border-sky-100 bg-gradient-to-br from-white to-sky-50 p-8 flex flex-col items-center justify-center overflow-hidden"
         >
-          {/* Blobs */}
-          <div className="absolute -left-8 -top-8 w-48 h-48 bg-sky-200/60 rounded-full blur-3xl animate-blob"></div>
-          <div className="absolute -right-8 -bottom-8 w-56 h-56 bg-indigo-200/40 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
-
-          {/* Crossfade Images + Lottie */}
-          <div className="relative w-[260px] sm:w-[320px] md:w-[360px] h-[380px] bg-white rounded-3xl shadow-xl border border-sky-100 overflow-hidden">
-            <motion.div
-              className="absolute inset-0"
-              initial={{ opacity: 1 }}
-              animate={{ opacity: showPassport ? 0 : 1 }}
-              transition={{ duration: 1.2 }}
-            >
-              {/* plain <img> for reliable animation */}
-              <img src="/demo-selfie.png" alt="Selfie" className="w-full h-full object-cover" />
-            </motion.div>
-          
-            <motion.div
-              className="absolute inset-0"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: showPassport ? 1 : 0 }}
-              transition={{ duration: 1.2 }}
-            >
-              <img src="/demo-passport.png" alt="Passport" className="w-full h-full object-cover" />
-            </motion.div>
-          
-            <div className="absolute inset-0 flex items-center justify-center bg-transparent pointer-events-none">
-              <Lottie
-                animationData={aiTransform}
-                loop
-                autoplay
-                className="w-full h-full opacity-85 mix-blend-overlay"
-              />
-            </div>
-          
-            <div className="absolute bottom-0 w-full text-center bg-white/70 backdrop-blur-md py-3 border-t border-sky-100">
-              <p className="text-sm text-slate-600 font-medium">
-                AI-powered transformation in seconds
-              </p>
-            </div>
+          {/* Animated gradient blobs */}
+          <div className="absolute -left-10 -top-10 w-40 h-40 bg-sky-200/40 rounded-full blur-3xl animate-blob"></div>
+          <div className="absolute -right-10 -bottom-10 w-52 h-52 bg-indigo-200/30 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
+        
+          {/* Step circles */}
+          <div className="relative z-10 flex flex-col gap-8 items-center justify-center w-full">
+            {[
+              { icon: <FaCloudUploadAlt />, title: "Upload", color: "from-sky-500 to-blue-500" },
+              { icon: <FaMagic />, title: "Remove Background", color: "from-indigo-500 to-purple-500" },
+              { icon: <FaDownload />, title: "Crop & Save", color: "from-emerald-500 to-green-500" },
+            ].map((step, i) => (
+              <motion.div
+                key={step.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.3 }}
+                className="flex flex-col items-center"
+              >
+                <div
+                  className={`w-16 h-16 flex items-center justify-center rounded-full bg-gradient-to-br ${step.color} text-white shadow-lg`}
+                >
+                  {step.icon}
+                </div>
+                <p className="mt-2 font-semibold text-sky-700">{step.title}</p>
+                {i < 2 && (
+                  <motion.div
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    transition={{ delay: i * 0.3 + 0.2, duration: 0.8 }}
+                    className="w-1 h-8 bg-gradient-to-b from-sky-400 to-indigo-400 rounded-full origin-top"
+                  ></motion.div>
+                )}
+              </motion.div>
+            ))}
           </div>
+        
+          {/* Caption */}
+          <p className="mt-6 text-sm text-gray-600 italic text-center">
+            Guided AI process — from upload to passport perfection ✨
+          </p>
         </motion.div>
       </section>
 
