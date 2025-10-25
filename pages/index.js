@@ -174,45 +174,49 @@ export default function Home() {
   // call this from onClick of your "Login with Google" button
   async function signInWithGooglePopup() {
     try {
-      // Ask Supabase for the OAuth redirect URL (v2 returns data.url)
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          // IMPORTANT: callback page we created earlier
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback`, // only the popup will use this
         },
       });
   
       if (error) throw error;
+      const authUrl = data?.url;
+      if (!authUrl) throw new Error("No Google auth URL returned");
   
-      // data.url is the full Google/Supabase authorize URL
-      const url = data?.url;
-      if (!url) throw new Error("No auth URL returned");
-  
-      // Open a centered popup
+      // ✅ Open the popup only — parent stays idle
       const width = 500;
-      const height = 650;
+      const height = 600;
       const left = window.screenX + (window.outerWidth - width) / 2;
       const top = window.screenY + (window.outerHeight - height) / 2.5;
   
       const popup = window.open(
-        url,
+        authUrl,
         "snappcrop-google-auth",
         `width=${width},height=${height},left=${left},top=${top},resizable,scrollbars=yes,status=1`
       );
   
       if (!popup) {
-        throw new Error("Popup blocked. Please allow popups for this site.");
+        alert("Please allow popups for this website to sign in with Google.");
+        return;
       }
   
-      // Optional fallback: if popup closed without postMessage, poll and reload
-      const checkClosed = setInterval(() => {
-        if (popup.closed) {
-          clearInterval(checkClosed);
-          // reload to reflect possible new session
+      // ✅ Wait for message from popup
+      const onMessage = (e) => {
+        if (e.origin !== window.location.origin) return;
+        if (e.data?.type === "supabase-auth-success") {
+          window.removeEventListener("message", onMessage);
+          popup.close();
           window.location.reload();
         }
-      }, 500);
+        if (e.data?.type === "supabase-auth-error") {
+          window.removeEventListener("message", onMessage);
+          popup.close();
+          alert("Google login failed: " + (e.data.error || "Unknown error"));
+        }
+      };
+      window.addEventListener("message", onMessage);
     } catch (err) {
       console.error("Google sign-in popup error:", err);
       alert("Google login failed: " + (err.message || err));
