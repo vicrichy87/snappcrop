@@ -6,7 +6,7 @@ export default async function handler(req, res) {
       return res.status(405).json({ success: false, message: "Method Not Allowed" });
     }
 
-    const { imageUrl } = JSON.parse(req.body || "{}");
+    const { imageUrl } = req.body || {};
     if (!imageUrl) {
       return res.status(400).json({ success: false, message: "Missing imageUrl" });
     }
