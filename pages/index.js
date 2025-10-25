@@ -1,6 +1,6 @@
 // pages/index.js
 import { useState, useEffect, useCallback, useRef } from "react";
-import Image from "next/image";
+import NextImage from "next/image";
 import Cropper from "react-easy-crop";
 import { motion } from "framer-motion";
 import {
@@ -337,7 +337,7 @@ export default function Home() {
             className="flex items-center gap-4"
           >
             <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-3xl overflow-hidden shadow-2xl border border-sky-100 hover:scale-105 transition duration-300 ease-in-out">
-              <Image
+              <NextImage
                 src={logo}
                 alt="Snappcrop Logo"
                 fill
@@ -407,7 +407,7 @@ export default function Home() {
               animate={{ opacity: showPassport ? 0 : 1 }}
               transition={{ duration: 1.2 }}
             >
-              <Image src="/demo-selfie.png" alt="Selfie" fill className="object-cover" />
+              <NextImage src="/demo-selfie.png" alt="Selfie" fill className="object-cover" />
             </motion.div>
             <motion.div
               className="absolute inset-0"
@@ -415,7 +415,7 @@ export default function Home() {
               animate={{ opacity: showPassport ? 1 : 0 }}
               transition={{ duration: 1.2 }}
             >
-              <Image src="/demo-passport.png" alt="Passport" fill className="object-cover" />
+              <NextImage src="/demo-passport.png" alt="Passport" fill className="object-cover" />
             </motion.div>
 
             <div className="absolute inset-0 flex items-center justify-center bg-transparent">
@@ -538,7 +538,7 @@ export default function Home() {
             transition={{ duration: 1.4, ease: "easeInOut" }}
             className="absolute inset-0"
           >
-            <Image
+            <NextImage
               src="/demo-selfie2.png"
               alt="Before - Selfie (diverse)"
               fill
@@ -554,7 +554,7 @@ export default function Home() {
             transition={{ duration: 1.4, ease: "easeInOut" }}
             className="absolute inset-0"
           >
-            <Image
+            <NextImage
               src="/demo-passport2.png"
               alt="After - Passport Photo (diverse)"
               fill
