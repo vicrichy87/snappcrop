@@ -49,6 +49,7 @@ export default async function handler(req, res) {
       const fileBuffer = await fs.promises.readFile(uploadedFile.filepath);
       formData.append("image_file", fileBuffer, uploadedFile.originalFilename);
     } else if (imageUrl) {
+      console.log("Sending to remove.bg:", imageUrl);
       formData.append("image_url", imageUrl);
     }
 
