@@ -63,7 +63,7 @@ export default function Home() {
   useEffect(() => {
     const interval = setInterval(() => {
       setShowPassport((prev) => !prev);
-    }, 3000); // change every 3s
+    }, 8000); // change every 8s
     return () => clearInterval(interval);
   }, []);
 
