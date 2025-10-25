@@ -49,6 +49,7 @@ export default function Home() {
   const inputRef = useRef(null);
   const imageRef = useRef(null);
   const humanRef = useRef(null);
+  const processSectionRef = useRef(null);
 
   const [selectedSize, setSelectedSize] = useState("us");
   const [bgColor, setBgColor] = useState("white");
