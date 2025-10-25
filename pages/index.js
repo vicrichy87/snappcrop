@@ -569,12 +569,17 @@ export default function Home() {
                   </motion.button>
               
                   <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    onClick={handleCropAndSave}
-                    disabled={loading}
-                    className="px-6 py-3 rounded-full font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md"
+                    whileHover={isBgRemoved && !loading ? { scale: 1.05 } : {}}
+                    onClick={isBgRemoved ? handleCropAndSave : null}
+                    disabled={loading || !isBgRemoved}
+                    className={`px-6 py-3 rounded-full font-semibold text-white shadow-md transition ${
+                      !isBgRemoved
+                        ? "bg-gray-300 cursor-not-allowed"
+                        : "bg-indigo-600 hover:bg-indigo-700"
+                    }`}
                   >
-                    <FaDownload className="inline mr-2" /> Crop & Save
+                    <FaDownload className="inline mr-2" />
+                    {isBgRemoved ? "Crop & Save" : "Remove Background First"}
                   </motion.button>
                 </div>
               </div>
