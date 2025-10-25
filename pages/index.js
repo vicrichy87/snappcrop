@@ -205,7 +205,8 @@ export default function Home() {
       }
   
       const imageUrl = uploadData.url;
-  
+
+      console.log("Background removal sending:", imageUrl);  
       // ✅ Step 2: Send Supabase image URL directly to /api/remove-bg
       const res = await fetch("/api/remove-bg", {
         method: "POST",
