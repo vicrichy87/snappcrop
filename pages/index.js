@@ -176,30 +176,70 @@ export default function Home() {
   };
 
   // ---------------- Background Removal ----------------
+  // ---------------- Background Removal ----------------
   const handleRemoveBackground = async () => {
-    if (!file || !previewUrl)
+    if (!file || !previewUrl) {
       return setMessage("Please upload a selfie first.");
+    }
+  
     setLoading(true);
-    setMessage("Removing background...");
+    setMessage("🪄 Removing background...");
+  
     try {
-      const form = new FormData();
-      form.append("file", file);
-      const res = await fetch("/api/remove-bg", { method: "POST", body: form });
-      console.log("API response status:", res.status);
-      const text = await res.text(); // Get raw text first
-      console.log("Raw API response:", text);
-      let data = {};
-      if (text) {
-        data = JSON.parse(text);
-      } else {
-        console.warn("Empty response from API");
+      // ✅ Reuse the Supabase image URL from upload (same used in Vision API)
+      const uploadForm = new FormData();
+      uploadForm.append("file", file);
+  
+      // Step 1: Get the existing Supabase public URL if not already stored
+      const uploadRes = await fetch("/api/upload", { method: "POST", body: uploadForm });
+      const uploadText = await uploadRes.text();
+      let uploadData = {};
+      try {
+        uploadData = uploadText ? JSON.parse(uploadText) : {};
+      } catch {
+        uploadData = {};
       }
+  
+      if (!uploadRes.ok || !uploadData.url) {
+        throw new Error(uploadData.error || `Upload failed (status ${uploadRes.status})`);
+      }
+  
+      const imageUrl = uploadData.url;
+  
+      // ✅ Step 2: Send Supabase image URL directly to /api/remove-bg
+      const res = await fetch("/api/remove-bg", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl }),
+      });
+  
+      console.log("API response status:", res.status);
+      const text = await res.text();
+      console.log("Raw API response:", text);
+  
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = {};
+      }
+  
       if (!res.ok) {
         throw new Error(data.error || `HTTP Error ${res.status}`);
       }
-      setPreviewUrl(data.url);
-      setIsBgRemoved(true);
-      setMessage("✅ Background removed successfully!");
+  
+      // ✅ Update UI with background-removed image
+      if (data.image) {
+        setPreviewUrl(data.image);
+        setIsBgRemoved(true);
+        setMessage("✅ Background removed successfully!");
+      } else if (data.url) {
+        setPreviewUrl(data.url);
+        setIsBgRemoved(true);
+        setMessage("✅ Background removed successfully!");
+      } else {
+        setMessage("⚠️ Background removal returned no image.");
+      }
     } catch (error) {
       console.error("Background removal error:", error);
       setMessage(`⚠️ Failed to remove background. (${error.message})`);
@@ -207,6 +247,7 @@ export default function Home() {
       setLoading(false);
     }
   };
+
 
   // ---------------- Crop & Save ----------------
   const handleCropAndSave = async () => {
