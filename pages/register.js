@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import logo from "../public/logo.png";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 
 export default function Register() {
@@ -12,6 +12,9 @@ export default function Register() {
     password: "",
     confirmPassword: "",
   });
+
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [countdown, setCountdown] = useState(3);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -26,36 +29,36 @@ export default function Register() {
 
     setLoading(true);
     try {
-      // ✅ Step 1: Register user with Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
         options: {
-          data: {
-            full_name: form.full_name, // stored as user_metadata
-          },
+          data: { full_name: form.full_name },
         },
       });
 
       if (error) throw error;
 
-      // ✅ Step 2: Optionally insert user into 'profiles' table
       if (data.user) {
         await supabase.from("profiles").insert([
-          {
-            id: data.user.id,
-            full_name: form.full_name,
-          },
+          { id: data.user.id, full_name: form.full_name },
         ]);
       }
 
-      const confirmed = window.confirm(
-        "✅ Registration successful! Please check your email to verify your account."
-      );
-      
-      if (confirmed) {
-        window.location.href = "/"; // ✅ Redirect to home after user clicks OK
-      }
+      // ✅ Show success modal
+      setShowSuccess(true);
+
+      // Start countdown redirect
+      let seconds = 3;
+      const timer = setInterval(() => {
+        seconds -= 1;
+        setCountdown(seconds);
+        if (seconds <= 0) {
+          clearInterval(timer);
+          window.location.href = "/";
+        }
+      }, 1000);
+
       setForm({
         full_name: "",
         email: "",
@@ -72,13 +75,13 @@ export default function Register() {
 
   return (
     <main className="relative min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-100 overflow-hidden">
-      {/* Animated background */}
+      {/* Background Waves */}
       <div className="absolute inset-0 overflow-hidden -z-10">
         <div className="absolute top-0 left-0 w-[120%] h-[120%] bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-blue-200 via-transparent to-transparent opacity-40 animate-wave-slow"></div>
         <div className="absolute bottom-0 right-0 w-[120%] h-[120%] bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-indigo-200 via-transparent to-transparent opacity-40 animate-wave-fast"></div>
       </div>
 
-      {/* Top Navigation */}
+      {/* Nav */}
       <nav className="w-full flex justify-end items-center px-6 lg:px-12 py-6 gap-3">
         <motion.a
           href="/"
@@ -103,7 +106,7 @@ export default function Register() {
         </motion.a>
       </nav>
 
-      {/* Registration Section */}
+      {/* Register Section */}
       <section className="w-full max-w-md mx-auto px-6 py-10 flex flex-col items-center justify-center text-center">
         <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-3xl overflow-hidden shadow-2xl border border-sky-100 mb-6">
           <Image
@@ -210,6 +213,31 @@ export default function Register() {
           </p>
         </form>
       </section>
+
+      {/* ✅ Success Modal */}
+      {showSuccess && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 150, damping: 10 }}
+            className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-[90%] text-center border border-blue-100"
+          >
+            <div className="mx-auto mb-4 w-20 h-20 rounded-full bg-gradient-to-r from-sky-100 to-indigo-100 flex items-center justify-center">
+              <span className="text-5xl">✅</span>
+            </div>
+            <h2 className="text-2xl font-bold text-sky-800 mb-2">
+              Registration Successful!
+            </h2>
+            <p className="text-slate-600 mb-4">
+              Please check your email to verify your account.
+            </p>
+            <p className="text-sm text-gray-500">
+              Redirecting to home in {countdown} seconds...
+            </p>
+          </motion.div>
+        </div>
+      )}
 
       <footer className="text-center pb-10 text-gray-500 text-sm">
         © {new Date().getFullYear()} Snappcrop — Speak. Snap. Smile.
