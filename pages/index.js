@@ -435,18 +435,20 @@ export default function Home() {
               animate={{ opacity: showPassport ? 0 : 1 }}
               transition={{ duration: 1.2 }}
             >
-              <NextImage src="/demo-selfie.png" alt="Selfie" fill className="object-cover" />
+              {/* plain <img> for reliable animation */}
+              <img src="/demo-selfie.png" alt="Selfie" className="w-full h-full object-cover" />
             </motion.div>
+          
             <motion.div
               className="absolute inset-0"
               initial={{ opacity: 0 }}
               animate={{ opacity: showPassport ? 1 : 0 }}
               transition={{ duration: 1.2 }}
             >
-              <NextImage src="/demo-passport.png" alt="Passport" fill className="object-cover" />
+              <img src="/demo-passport.png" alt="Passport" className="w-full h-full object-cover" />
             </motion.div>
-
-            <div className="absolute inset-0 flex items-center justify-center bg-transparent">
+          
+            <div className="absolute inset-0 flex items-center justify-center bg-transparent pointer-events-none">
               <Lottie
                 animationData={aiTransform}
                 loop
@@ -454,6 +456,7 @@ export default function Home() {
                 className="w-full h-full opacity-85 mix-blend-overlay"
               />
             </div>
+          
             <div className="absolute bottom-0 w-full text-center bg-white/70 backdrop-blur-md py-3 border-t border-sky-100">
               <p className="text-sm text-slate-600 font-medium">
                 AI-powered transformation in seconds
@@ -610,15 +613,13 @@ export default function Home() {
             transition={{ duration: 1.4, ease: "easeInOut" }}
             className="absolute inset-0"
           >
-            <NextImage
+            <img
               src="/demo-selfie2.png"
               alt="Before - Selfie (diverse)"
-              fill
-              className="object-cover brightness-95"
-              priority
+              className="w-full h-full object-cover brightness-95"
             />
           </motion.div>
-
+          
           <motion.div
             key="demo2-passport"
             initial={{ opacity: 0 }}
@@ -626,12 +627,10 @@ export default function Home() {
             transition={{ duration: 1.4, ease: "easeInOut" }}
             className="absolute inset-0"
           >
-            <NextImage
+            <img
               src="/demo-passport2.png"
               alt="After - Passport Photo (diverse)"
-              fill
-              className="object-cover brightness-100"
-              priority
+              className="w-full h-full object-cover brightness-100"
             />
           </motion.div>
         </div>
