@@ -519,7 +519,7 @@ export default function Home() {
           </motion.div>
         </div>
         
-        {/* ✅ Right side - Process Flow Animation (Refined & Compact) */}
+        {/* ✅ Right side - Process Flow Animation (Adjusted with Top Margin) */}
         <motion.div
           initial={{ opacity: 0, y: 30, scale: 0.95, height: "auto" }}
           animate={
@@ -538,10 +538,9 @@ export default function Home() {
           transition={{ duration: 0.8, ease: "easeInOut" }}
           className={`relative w-full max-w-[320px] overflow-hidden rounded-2xl shadow-xl border border-sky-100 bg-gradient-to-br from-white to-sky-50 p-6 flex flex-col items-center justify-center transition-all duration-700 ${
             hasUploaded ? "pointer-events-none" : ""
-          }`}
-          style={{ marginTop: "1rem" }}
+          } mt-20 md:mt-24`}
         >
-          {/* ✨ Subtle animated blobs (reduced size + intensity) */}
+          {/* ✨ Subtle animated blobs */}
           <div className="absolute -left-6 -top-6 w-28 h-28 bg-sky-200/40 rounded-full blur-2xl animate-blob"></div>
           <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-indigo-200/30 rounded-full blur-2xl animate-blob animation-delay-2000"></div>
         
