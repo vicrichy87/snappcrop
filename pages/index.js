@@ -127,7 +127,7 @@ export default function Home() {
           const imageUrl = uploadData.url;
   
           // Step 2: Call Vision API backend for analysis
-          setMessage("🔍 Analyzing face using Google Vision...");
+          setMessage("🔍 Analyzing your photo to ensure it meets passport standards...");
           const analyzeRes = await fetch("/api/analyze-face", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -148,11 +148,11 @@ export default function Home() {
           }
   
           // Step 3: Handle Vision API result
-          if (data.success) {
+         if (data.success) {
             setIsCompliant(data.isCompliant);
-            setMessage(data.message);
-            console.log("Vision AI details:", data.details);
-          } else {
+            setMessage(data.message.replace("Face meets passport requirements", "Photo approved by Snappcrop AI"));
+          }
+         else {
             setMessage(data.message || "⚠️ Could not analyze face.");
           }
   
