@@ -483,9 +483,10 @@ export default function Home() {
 
       {/* Upload & Crop Section */}
       <motion.section
-        initial="hidden"
-        animate="show"
-        variants={{ show: { transition: { staggerChildren: 0.15 } } }}
+        ref={processSectionRef}
+        initial={{ opacity: 0.6, y: 40 }}
+        animate={hasUploaded ? { opacity: 1, y: 0 } : { opacity: 0.6, y: 40 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}        
         className="relative z-10 flex flex-col items-center px-6 pb-24"
       >
         <motion.div
