@@ -14,6 +14,7 @@ import { supabase } from "../lib/supabase";
 import { getSession } from "../lib/session";
 import Lottie from "lottie-react";
 import aiTransform from "../public/ai-transform.json";
+import { AnimatePresence } from "framer-motion";
 
 /**
  * Snappcrop - Full Feature Home Page
@@ -57,6 +58,8 @@ export default function Home() {
   const [showDownloadPrompt, setShowDownloadPrompt] = useState(false);
 
   const [hasUploaded, setHasUploaded] = useState(false);
+
+  const [showLogin, setShowLogin] = useState(false);
 
 
   // ---------------- Load Google Vision API ----------------
@@ -421,8 +424,8 @@ export default function Home() {
             >
               About
             </a>
-            <motion.a
-              href="/login"
+            <motion.button
+              onClick={() => setShowLogin(true)} // 🧩 Opens the login modal
               whileHover={{ scale: 1.08, rotate: 1 }}
               whileTap={{ scale: 0.96 }}
               transition={{ type: "spring", stiffness: 250, damping: 12 }}
@@ -435,7 +438,7 @@ export default function Home() {
             
               {/* Inner shine line */}
               <span className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-shine"></span>
-            </motion.a> 
+            </motion.button> 
           </motion.div>
         </div>
         
@@ -758,6 +761,89 @@ export default function Home() {
         </p>
       </section>
 
+      {/* ✅ Login Modal */}
+      <AnimatePresence>
+        {showLogin && (
+          <>
+            {/* Overlay */}
+            <motion.div
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowLogin(false)}
+            />
+      
+            {/* Modal */}
+            <motion.div
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 80, opacity: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="fixed z-50 inset-0 flex items-center justify-center px-4"
+            >
+              <div className="relative w-full max-w-md bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-sky-100 p-8 text-center">
+                <button
+                  onClick={() => setShowLogin(false)}
+                  className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 text-xl"
+                >
+                  ✕
+                </button>
+      
+                <h2 className="text-3xl font-bold text-sky-700 mb-6">Login</h2>
+      
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    alert("✅ Logged in successfully!");
+                    setShowLogin(false);
+                  }}
+                  className="flex flex-col gap-4 text-left"
+                >
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">Email</label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="you@example.com"
+                      className="w-full border border-sky-200 rounded-full px-4 py-2 focus:ring-2 focus:ring-sky-400 outline-none"
+                    />
+                  </div>
+      
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">Password</label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="••••••••"
+                      className="w-full border border-sky-200 rounded-full px-4 py-2 focus:ring-2 focus:ring-sky-400 outline-none"
+                    />
+                  </div>
+      
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    type="submit"
+                    className="mt-4 px-8 py-3 bg-gradient-to-r from-sky-600 to-indigo-600 text-white font-semibold rounded-full shadow-md hover:from-sky-700 hover:to-indigo-700 transition-all"
+                  >
+                    Sign In
+                  </motion.button>
+                </form>
+      
+                <p className="mt-6 text-sm text-slate-600">
+                  Don’t have an account?{" "}
+                  <a
+                    href="/register"
+                    className="text-sky-600 hover:text-indigo-600 font-semibold underline"
+                  >
+                    Click here to register
+                  </a>
+                </p>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Footer */}
       <footer className="text-center pb-10 text-gray-500 text-sm">
         © {new Date().getFullYear()} Snappcrop — Speak. Snap. Smile.
@@ -810,7 +896,19 @@ export default function Home() {
         }
         .animate-pulse-soft {
           animation: pulse-soft 2.5s ease-in-out infinite;
-        }        
+        }
+        @keyframes pulse-slow {
+          0%, 100% { opacity: 0.75; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.02); }
+        }
+        .animate-pulse-slow { animation: pulse-slow 3s ease-in-out infinite; }
+        
+        @keyframes shine {
+          0% { transform: translateX(-100%); opacity: 0; }
+          50% { opacity: 0.8; }
+          100% { transform: translateX(100%); opacity: 0; }
+        }
+        .animate-shine { animation: shine 3.5s linear infinite; }
       `}</style>
 
         {/* Global Loading Overlay */}
