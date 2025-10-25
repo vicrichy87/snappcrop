@@ -59,6 +59,14 @@ export default function Home() {
     setMessage("Initializing...");
   }, []);
 
+  // Automatically toggle the hero and demo animations every 3 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setShowPassport((prev) => !prev);
+    }, 3000); // change every 3s
+    return () => clearInterval(interval);
+  }, []);
+
   // ---------------- Helpers ----------------
   const fadeUp = {
     hidden: { opacity: 0, y: 30 },
