@@ -243,6 +243,21 @@ export default function About() {
                     Click here to register
                   </a>
                 </p>
+                
+                {/* Google Login Button */}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => alert("🌐 Google login coming soon!")}
+                  className="mt-6 w-full flex items-center justify-center gap-3 bg-white border border-sky-200 rounded-full px-6 py-3 shadow-md hover:shadow-lg transition-all"
+                >
+                  <img
+                    src="https://www.svgrepo.com/show/475656/google-color.svg"
+                    alt="Google logo"
+                    className="w-5 h-5"
+                  />
+                  <span className="font-semibold text-slate-700">Login with Google</span>
+                </motion.button>
               </div>
             </motion.div>
           </>
