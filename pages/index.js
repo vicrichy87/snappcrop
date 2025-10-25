@@ -83,20 +83,42 @@ export default function Home() {
   //Users
   useEffect(() => {
     const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+  
       if (user) {
-        // Fetch profile from Supabase 'profiles' table
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("id", user.id)
-          .single();
-        setUser({ ...user, full_name: profile?.full_name || user.email });
+        // ✅ Prioritize Display Name (user_metadata.name) if available
+        const displayName =
+          user.user_metadata?.name ||
+          user.user_metadata?.full_name ||
+          user.email.split("@")[0];
+  
+        setUser({ ...user, displayName });
       } else {
         setUser(null);
       }
     };
+  
     fetchUser();
+  
+    // ✅ Listen for login/logout changes
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        const user = session?.user;
+        if (user) {
+          const displayName =
+            user.user_metadata?.name ||
+            user.user_metadata?.full_name ||
+            user.email.split("@")[0];
+          setUser({ ...user, displayName });
+        } else {
+          setUser(null);
+        }
+      }
+    );
+  
+    return () => listener.subscription.unsubscribe();
   }, []);
 
   // ---------------- Helpers ----------------
@@ -472,7 +494,7 @@ export default function Home() {
             {user && (
               <div className="flex flex-col sm:flex-row items-center gap-3">
                 <div className="px-6 py-3 bg-white/80 backdrop-blur-md border border-sky-100 rounded-full text-sky-800 font-semibold shadow-sm">
-                  👋 Welcome, {user.full_name}
+                  Welcome, {user.displayName?.charAt(0).toUpperCase() + user.displayName?.slice(1)}
                 </div>
           
                 <motion.button
