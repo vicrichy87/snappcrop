@@ -421,12 +421,21 @@ export default function Home() {
             >
               About
             </a>
-            <a
-              href="/gallery"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 w-full sm:w-auto bg-white text-sky-700 border border-sky-200 rounded-full font-semibold shadow-sm hover:shadow-md hover:bg-sky-50 transition text-sm sm:text-base"
+            <motion.a
+              href="/login"
+              whileHover={{ scale: 1.08, rotate: 1 }}
+              whileTap={{ scale: 0.96 }}
+              transition={{ type: "spring", stiffness: 250, damping: 12 }}
+              className="relative inline-flex items-center justify-center gap-2 px-6 py-3 w-full sm:w-auto font-semibold text-sm sm:text-base text-white rounded-full bg-gradient-to-r from-sky-600 via-indigo-600 to-purple-600 shadow-lg overflow-hidden"
             >
-              Gallery
-            </a>
+              <span className="relative z-10">Login</span>
+            
+              {/* Glowing border effect */}
+              <span className="absolute inset-0 rounded-full bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 blur-md opacity-75 animate-pulse-slow"></span>
+            
+              {/* Inner shine line */}
+              <span className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-shine"></span>
+            </motion.a> 
           </motion.div>
         </div>
         
