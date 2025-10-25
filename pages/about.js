@@ -11,8 +11,35 @@ export default function About() {
         <div className="absolute bottom-0 right-0 w-[120%] h-[120%] bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-indigo-200 via-transparent to-transparent opacity-40 animate-wave-fast"></div>
       </div>
 
+      {/* ✅ Top Navigation Buttons */}
+      <nav className="w-full flex justify-end items-center px-6 lg:px-12 py-6 gap-3">
+        <motion.a
+          href="/"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 250, damping: 12 }}
+          className="inline-flex items-center justify-center px-6 py-2 bg-white/80 backdrop-blur-md text-sky-700 font-semibold border border-sky-200 rounded-full shadow-sm hover:shadow-md hover:bg-sky-50 transition text-sm"
+        >
+          Home
+        </motion.a>
+
+        <motion.a
+          href="/login"
+          whileHover={{ scale: 1.08, rotate: 1 }}
+          whileTap={{ scale: 0.96 }}
+          transition={{ type: "spring", stiffness: 250, damping: 12 }}
+          className="relative inline-flex items-center justify-center px-6 py-2 font-semibold text-sm text-white rounded-full bg-gradient-to-r from-sky-600 via-indigo-600 to-purple-600 shadow-lg overflow-hidden"
+        >
+          <span className="relative z-10">Login</span>
+          {/* Glowing border effect */}
+          <span className="absolute inset-0 rounded-full bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 blur-md opacity-75 animate-pulse-slow"></span>
+          {/* Inner shine line */}
+          <span className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-shine"></span>
+        </motion.a>
+      </nav>
+
       {/* Header */}
-      <section className="w-full max-w-5xl mx-auto px-6 lg:px-12 py-16 text-center">
+      <section className="w-full max-w-5xl mx-auto px-6 lg:px-12 py-10 text-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -155,6 +182,19 @@ export default function About() {
         }
         .animate-wave-slow { animation: wave-slow 6s ease-in-out infinite; }
         .animate-wave-fast { animation: wave-fast 4s ease-in-out infinite; }
+
+        @keyframes pulse-slow {
+          0%, 100% { opacity: 0.75; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.02); }
+        }
+        .animate-pulse-slow { animation: pulse-slow 3s ease-in-out infinite; }
+
+        @keyframes shine {
+          0% { transform: translateX(-100%); opacity: 0; }
+          50% { opacity: 0.8; }
+          100% { transform: translateX(100%); opacity: 0; }
+        }
+        .animate-shine { animation: shine 3.5s linear infinite; }
       `}</style>
     </main>
   );
