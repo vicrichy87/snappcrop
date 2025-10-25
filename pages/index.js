@@ -53,6 +53,9 @@ export default function Home() {
   const [selectedSize, setSelectedSize] = useState("us");
   const [bgColor, setBgColor] = useState("white");
 
+  const [showDownloadPrompt, setShowDownloadPrompt] = useState(false);
+
+
 
   // ---------------- Load Google Vision API ----------------
   useEffect(() => {
@@ -579,25 +582,82 @@ export default function Home() {
           )}
 
           {downloadUrl && (
-            <motion.a
-              whileHover={{ scale: 1.05 }}
-              href={downloadUrl}
-              download
-              className="block mt-8 text-center bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-full font-semibold shadow-lg"
-            >
-              Download Passport Photo
-            </motion.a>
-          )}
-          {message && (
-            <p className="mt-4 text-sm text-gray-600 italic">{message}</p>
-          )}
-          {isCompliant !== null && (
-            <p className="mt-2 text-sm text-gray-600">
-              {isCompliant
-                ? "✅ Image complies with passport standards."
-                : "⚠️ Image may not comply. Adjust and retry."}
-            </p>
-          )}
+            <>
+              {/* Download button triggers the prompt */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                onClick={() => setShowDownloadPrompt(true)}
+                className="block mt-8 mx-auto text-center bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white py-3 px-8 rounded-full font-semibold shadow-lg"
+              >
+                Download Passport Photo
+              </motion.button>
+          
+              {/* Snappcrop Gradient Modal */}
+              {showDownloadPrompt && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50"
+                >
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.25 }}
+                    className="relative bg-gradient-to-br from-sky-100 via-white to-indigo-50 border border-sky-200 shadow-2xl rounded-3xl w-[90%] max-w-sm p-6 text-center"
+                  >
+                    <h3 className="text-xl font-extrabold text-sky-800 mb-2">
+                      Download Your Passport Photo
+                    </h3>
+                    <p className="text-gray-600 mb-6 text-sm leading-relaxed">
+                      Would you like to <strong>save</strong> this passport photo to your device,
+                      or <strong>open</strong> it in a new tab?
+                    </p>
+          
+                    <div className="flex justify-center gap-3">
+                      {/* Save Option */}
+                      <button
+                        onClick={() => {
+                          const link = document.createElement("a");
+                          link.href = downloadUrl;
+                          link.download = "snappcrop-passport-photo.jpg";
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                          setShowDownloadPrompt(false);
+                        }}
+                        className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full text-sm font-medium shadow-md transition"
+                      >
+                        💾 Save to Device
+                      </button>
+          
+                      {/* Open Option */}
+                      <button
+                        onClick={() => {
+                          window.open(downloadUrl, "_blank");
+                          setShowDownloadPrompt(false);
+                        }}
+                        className="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-full text-sm font-medium shadow-md transition"
+                      >
+                        🌐 Open
+                      </button>
+                    </div>
+          
+                    {/* Cancel Option */}
+                    <button
+                      onClick={() => setShowDownloadPrompt(false)}
+                      className="block mt-5 mx-auto text-gray-500 hover:text-gray-700 text-sm"
+                    >
+                      Cancel
+                    </button>
+          
+                    {/* Subtle glowing ring */}
+                    <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-sky-300 to-indigo-300 opacity-20 blur-2xl -z-10"></div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </>
+          )}            
         </motion.div>
       </motion.section>
 
