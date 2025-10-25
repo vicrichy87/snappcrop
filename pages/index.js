@@ -518,8 +518,8 @@ export default function Home() {
             </button>
           </motion.div>
         </div>
-        
-        {/* ✅ Right side - Process Flow Animation (Adjusted with Top Margin) */}
+          
+        {/* ✅ Right side - Process Flow Animation (Lifted for better alignment) */}
         <motion.div
           initial={{ opacity: 0, y: 30, scale: 0.95, height: "auto" }}
           animate={
@@ -538,7 +538,7 @@ export default function Home() {
           transition={{ duration: 0.8, ease: "easeInOut" }}
           className={`relative w-full max-w-[320px] overflow-hidden rounded-2xl shadow-xl border border-sky-100 bg-gradient-to-br from-white to-sky-50 p-6 flex flex-col items-center justify-center transition-all duration-700 ${
             hasUploaded ? "pointer-events-none" : ""
-          } mt-20 md:mt-24`}
+          } mt-10 md:mt-14`}
         >
           {/* ✨ Subtle animated blobs */}
           <div className="absolute -left-6 -top-6 w-28 h-28 bg-sky-200/40 rounded-full blur-2xl animate-blob"></div>
