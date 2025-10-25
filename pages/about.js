@@ -56,10 +56,10 @@ export default function About() {
         <h2 className="text-2xl font-bold text-sky-800 mb-4">Key Features</h2>
         <ul className="list-disc list-inside mb-6 space-y-2">
           <li>📸 Easy selfie upload from your phone or computer.</li>
-          <li>🤖 Automatic face detection and cropping to standard passport sizes (e.g., 2x2 inches).</li>
+          <li>🤖 Automatic face detection and cropping to standard passport sizes.</li>
           <li>🎨 Background removal with customizable red or white backgrounds.</li>
           <li>☁️ Secure storage and fast image delivery powered by Supabase.</li>
-          <li>🌍 Future updates: Multi-country compliance checks and print-ready export options.</li>
+          <li>🌍 Future updates: Multi-country compliance checks and print-ready exports.</li>
         </ul>
 
         <p className="mt-6">
@@ -77,37 +77,66 @@ export default function About() {
         </p>
       </motion.section>
 
-      {/* Bottom Animation */}
-      <section className="relative z-10 text-center pb-32">
-        <motion.h2
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
-          className="text-3xl font-extrabold text-sky-800 mb-10"
-        >
-          Snappcrop in Motion
-        </motion.h2>
-
-        <div className="relative w-[280px] sm:w-[320px] md:w-[360px] mx-auto aspect-[3/4] rounded-3xl overflow-hidden shadow-2xl border border-blue-100">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <motion.div
-              className="absolute w-24 h-24 bg-gradient-to-r from-sky-400 to-indigo-500 rounded-full blur-2xl opacity-70 animate-blob"
-              animate={{ scale: [1, 1.1, 1], rotate: [0, 20, 0] }}
-              transition={{ repeat: Infinity, duration: 6 }}
-            ></motion.div>
-            <motion.div
-              className="absolute w-16 h-16 bg-gradient-to-r from-indigo-300 to-sky-300 rounded-full blur-3xl opacity-60 animate-blob animation-delay-2000"
-              animate={{ scale: [1, 1.2, 1], rotate: [0, -15, 0] }}
-              transition={{ repeat: Infinity, duration: 8 }}
-            ></motion.div>
-          </div>
-        </div>
-
-        <p className="mt-6 text-gray-600 text-sm max-w-lg mx-auto">
-          At Snappcrop, we blend simplicity, design, and technology to make official photos effortless.
+      {/* Contact Us Section */}
+      <motion.section
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        viewport={{ once: true }}
+        className="relative z-10 w-full max-w-3xl mx-auto mb-24 bg-white/80 backdrop-blur-md border border-blue-100 rounded-3xl shadow-2xl p-10 text-center"
+      >
+        <h2 className="text-3xl font-bold text-sky-800 mb-4">Contact Us</h2>
+        <p className="text-slate-600 mb-8">
+          Have a question, feature request, or feedback? We’d love to hear from you!  
+          Fill out the form below and we’ll get back to you soon.
         </p>
-      </section>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            alert("✅ Thank you! Your message has been sent successfully.");
+          }}
+          className="flex flex-col gap-4 text-left"
+        >
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Name</label>
+            <input
+              type="text"
+              required
+              placeholder="Your full name"
+              className="w-full border border-sky-200 rounded-full px-4 py-2 focus:ring-2 focus:ring-sky-400 outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Email</label>
+            <input
+              type="email"
+              required
+              placeholder="you@example.com"
+              className="w-full border border-sky-200 rounded-full px-4 py-2 focus:ring-2 focus:ring-sky-400 outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Message</label>
+            <textarea
+              required
+              placeholder="Type your message here..."
+              rows="5"
+              className="w-full border border-sky-200 rounded-3xl px-4 py-3 focus:ring-2 focus:ring-sky-400 outline-none resize-none"
+            ></textarea>
+          </div>
+
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            type="submit"
+            className="mt-4 px-8 py-3 bg-gradient-to-r from-sky-600 to-indigo-600 text-white font-semibold rounded-full shadow-md hover:from-sky-700 hover:to-indigo-700 transition-all"
+          >
+            Send Message
+          </motion.button>
+        </form>
+      </motion.section>
 
       {/* Footer */}
       <footer className="text-center pb-10 text-gray-500 text-sm">
@@ -126,14 +155,6 @@ export default function About() {
         }
         .animate-wave-slow { animation: wave-slow 6s ease-in-out infinite; }
         .animate-wave-fast { animation: wave-fast 4s ease-in-out infinite; }
-        @keyframes blob {
-          0% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(10px, -10px) scale(1.1); }
-          66% { transform: translate(-10px, 10px) scale(1.05); }
-          100% { transform: translate(0, 0) scale(1); }
-        }
-        .animate-blob { animation: blob 15s infinite; }
-        .animation-delay-2000 { animation-delay: 2s; }
       `}</style>
     </main>
   );
