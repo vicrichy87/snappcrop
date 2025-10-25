@@ -472,7 +472,7 @@ export default function Home() {
         
           {/* Caption */}
           <p className="mt-6 text-sm text-gray-600 italic text-center">
-            Guided AI process — from upload to passport perfection ✨
+            Guided AI process — from upload to passport perfection
           </p>
         </motion.div>
       </section>
