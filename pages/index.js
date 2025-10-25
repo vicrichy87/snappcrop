@@ -642,12 +642,8 @@ export default function Home() {
                               document.body.appendChild(link);
                               link.click();
                               document.body.removeChild(link);
-                              window.URL.revokeObjectURL(url);
-                        
-                              // Show iOS-specific hint
-                              if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-                                alert("📱 To save the photo: tap and hold the image, then choose 'Save to Photos'.");
-                              }
+                              window.URL.revokeObjectURL(url);                      
+                              
                             }
                           } catch (err) {
                             console.error("Save failed:", err);
