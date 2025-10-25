@@ -1,66 +1,91 @@
-// /pages/api/analyze-face.js
 import vision from "@google-cloud/vision";
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" });
-  }
-
   try {
+    if (req.method !== "POST") {
+      return res.status(405).json({ success: false, message: "Method Not Allowed" });
+    }
+
     const { imageUrl } = JSON.parse(req.body || "{}");
     if (!imageUrl) {
-      return res.status(400).json({ error: "Missing imageUrl in request" });
+      return res.status(400).json({ success: false, message: "Missing imageUrl" });
     }
 
-    let credentials;
-    if (process.env.GOOGLE_CREDENTIALS) {
-      try {
-        credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
-      } catch (e) {
-        console.error("❌ Invalid GOOGLE_CREDENTIALS JSON:", e);
-        return res.status(500).json({ error: "Invalid GOOGLE_CREDENTIALS" });
-      }
-    }
+    // --- Initialize Vision API client using environment variable ---
+    const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS || "{}");
+    const client = new vision.ImageAnnotatorClient({ credentials });
 
-    // ✅ Initialize Vision API client safely for Vercel
-    const client = new vision.ImageAnnotatorClient({
-      credentials: credentials,
-    });
-
+    // --- Analyze the image ---
     const [result] = await client.faceDetection(imageUrl);
-    const faces = result.faceAnnotations || [];
+    const faces = result.faceAnnotations;
 
-    if (faces.length === 0) {
+    if (!faces || faces.length === 0) {
       return res.status(200).json({
-        success: false,
-        message: "⚠️ No faces detected. Please try another image.",
+        success: true,
+        isCompliant: false,
+        message: "⚠️ No face detected. Please ensure your face is clearly visible.",
       });
     }
 
     const face = faces[0];
-    const joy = face.joyLikelihood;
-    const sorrow = face.sorrowLikelihood;
-    const anger = face.angerLikelihood;
-    const surprise = face.surpriseLikelihood;
+    const {
+      joyLikelihood,
+      angerLikelihood,
+      sorrowLikelihood,
+      surpriseLikelihood,
+      blurredLikelihood,
+      headwearLikelihood,
+      detectionConfidence,
+      rollAngle,
+      panAngle,
+      tiltAngle,
+    } = face;
+
+    // --- Compliance checks ---
+    const isNeutralExpression =
+      joyLikelihood !== "VERY_LIKELY" &&
+      angerLikelihood !== "VERY_LIKELY" &&
+      sorrowLikelihood !== "VERY_LIKELY" &&
+      surpriseLikelihood !== "VERY_LIKELY";
+
+    const isFaceClear = blurredLikelihood === "VERY_UNLIKELY";
+    const noHeadwear = headwearLikelihood === "VERY_UNLIKELY";
+    const isFacingForward =
+      Math.abs(rollAngle) < 10 && Math.abs(panAngle) < 10 && Math.abs(tiltAngle) < 10;
 
     const isCompliant =
-      joy === "VERY_UNLIKELY" &&
-      sorrow === "VERY_UNLIKELY" &&
-      anger === "VERY_UNLIKELY" &&
-      surprise === "VERY_UNLIKELY";
+      isNeutralExpression && isFaceClear && noHeadwear && isFacingForward;
+
+    // --- Build message ---
+    let message = "";
+    if (isCompliant) {
+      message = "✅ Face meets passport requirements: clear, neutral, and facing forward.";
+    } else {
+      message = "⚠️ Please retake the photo:";
+      if (!isNeutralExpression) message += " keep a neutral expression;";
+      if (!isFaceClear) message += " improve lighting or focus;";
+      if (!noHeadwear) message += " remove hats or sunglasses;";
+      if (!isFacingForward) message += " face the camera directly;";
+    }
 
     return res.status(200).json({
       success: true,
       isCompliant,
-      message: isCompliant
-        ? "✅ Face detected and expression neutral — ready for passport photo."
-        : "⚠️ Face detected but expression not neutral. Please retake your photo.",
-      details: { joy, sorrow, anger, surprise },
+      message,
+      joyLikelihood,
+      angerLikelihood,
+      blurredLikelihood,
+      headwearLikelihood,
+      rollAngle,
+      panAngle,
+      tiltAngle,
+      detectionConfidence,
     });
   } catch (error) {
-    console.error("❌ Vision API error:", error);
+    console.error("Vision API error:", error);
     return res.status(500).json({
-      error: `Vision API error: ${error.message || "Unknown error"}`,
+      success: false,
+      message: `❌ Vision API verification failed: ${error.message || error}`,
     });
   }
 }
