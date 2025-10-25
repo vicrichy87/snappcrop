@@ -172,7 +172,7 @@ export default function Home() {
   
   const triggerFile = () => {
     inputRef.current?.click();
-    await handleFileChange().catch((error) => console.error("Upload error:", error));
+    handleFileChange().catch((error) => console.error("Upload error:", error));
   };
 
   // ---------------- Background Removal ----------------
