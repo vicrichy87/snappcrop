@@ -2,6 +2,8 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import logo from "../public/logo.png";
+import { supabase } from "../lib/supabase";
+
 
 export default function About() {
   const [showLogin, setShowLogin] = useState(false);
