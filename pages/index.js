@@ -64,6 +64,9 @@ export default function Home() {
   const [loginSuccess, setLoginSuccess] = useState(false);
   const [loginCountdown, setLoginCountdown] = useState(3);
 
+  const [user, setUser] = useState(null);
+
+
   // ---------------- Load Google Vision API ----------------
   useEffect(() => {
     setMessage("Initializing...");
@@ -75,6 +78,25 @@ export default function Home() {
       setShowPassport((prev) => !prev);
     }, 8000); // change every 8s
     return () => clearInterval(interval);
+  }, []);
+
+  //Users
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Fetch profile from Supabase 'profiles' table
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single();
+        setUser({ ...user, full_name: profile?.full_name || user.email });
+      } else {
+        setUser(null);
+      }
+    };
+    fetchUser();
   }, []);
 
   // ---------------- Helpers ----------------
@@ -414,34 +436,60 @@ export default function Home() {
             transition={{ delay: 0.4, duration: 0.7 }}
             className="flex flex-col sm:flex-row flex-wrap items-center gap-3 mt-6 w-full"
           >
+            {/* Upload / Selfie button stays visible always */}
             <button
               onClick={triggerFile}
               className="inline-flex items-center justify-center gap-2 px-6 py-3 w-full sm:w-auto bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white font-semibold rounded-full shadow-md transition text-sm sm:text-base"
             >
               <FaCloudUploadAlt /> Take a Selfie!
             </button>
-            <a
-              href="/about"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 w-full sm:w-auto bg-white text-sky-700 border border-sky-200 rounded-full font-semibold shadow-sm hover:shadow-md hover:bg-sky-50 transition text-sm sm:text-base"
-            >
-              About
-            </a>
-            <motion.button
-              onClick={() => setShowLogin(true)} // 🧩 Opens the login modal
-              whileHover={{ scale: 1.08, rotate: 1 }}
-              whileTap={{ scale: 0.96 }}
-              transition={{ type: "spring", stiffness: 250, damping: 12 }}
-              className="relative inline-flex items-center justify-center gap-2 px-6 py-3 w-full sm:w-auto font-semibold text-sm sm:text-base text-white rounded-full bg-gradient-to-r from-sky-600 via-indigo-600 to-purple-600 shadow-lg overflow-hidden"
-            >
-              <span className="relative z-10">Login</span>
-            
-              {/* Glowing border effect */}
-              <span className="absolute inset-0 rounded-full bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 blur-md opacity-75 animate-pulse-slow"></span>
-            
-              {/* Inner shine line */}
-              <span className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-shine"></span>
-            </motion.button> 
+          
+            {/* ✅ If NOT logged in: show About + Login */}
+            {!user && (
+              <>
+                <a
+                  href="/about"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 w-full sm:w-auto bg-white text-sky-700 border border-sky-200 rounded-full font-semibold shadow-sm hover:shadow-md hover:bg-sky-50 transition text-sm sm:text-base"
+                >
+                  About
+                </a>
+          
+                <motion.button
+                  onClick={() => setShowLogin(true)}
+                  whileHover={{ scale: 1.08, rotate: 1 }}
+                  whileTap={{ scale: 0.96 }}
+                  transition={{ type: "spring", stiffness: 250, damping: 12 }}
+                  className="relative inline-flex items-center justify-center gap-2 px-6 py-3 w-full sm:w-auto font-semibold text-sm sm:text-base text-white rounded-full bg-gradient-to-r from-sky-600 via-indigo-600 to-purple-600 shadow-lg overflow-hidden"
+                >
+                  <span className="relative z-10">Login</span>
+                  <span className="absolute inset-0 rounded-full bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 blur-md opacity-75 animate-pulse-slow"></span>
+                  <span className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-shine"></span>
+                </motion.button>
+              </>
+            )}
+          
+            {/* ✅ If logged in: show Welcome + Logout */}
+            {user && (
+              <div className="flex flex-col sm:flex-row items-center gap-3">
+                <div className="px-6 py-3 bg-white/80 backdrop-blur-md border border-sky-100 rounded-full text-sky-800 font-semibold shadow-sm">
+                  👋 Welcome, {user.full_name}
+                </div>
+          
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    setUser(null);
+                  }}
+                  className="px-6 py-3 w-full sm:w-auto rounded-full font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-md transition text-sm sm:text-base"
+                >
+                  Logout
+                </motion.button>
+              </div>
+            )}
           </motion.div>
+
         </div>
         
         {/* Right side - Process Flow Animation */}
