@@ -11,19 +11,31 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: "Missing imageUrl" });
     }
 
-    // --- Initialize Vision API client using environment variable ---
     const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS || "{}");
     const client = new vision.ImageAnnotatorClient({ credentials });
 
-    // --- Analyze the image ---
-    const [result] = await client.faceDetection(imageUrl);
-    const faces = result.faceAnnotations;
+    // 🧠 Step 1: Try to fetch the image
+    let imageRequest;
+    try {
+      const response = await fetch(imageUrl);
+      if (!response.ok) throw new Error(`Image fetch failed (${response.status})`);
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      imageRequest = { image: { content: buffer.toString("base64") } };
+    } catch (fetchError) {
+      console.warn("⚠️ Could not fetch image directly, falling back to URL:", fetchError);
+      imageRequest = { image: { source: { imageUri: imageUrl } } };
+    }
 
-    if (!faces || faces.length === 0) {
+    // 🧠 Step 2: Call Vision API
+    const [result] = await client.faceDetection(imageRequest);
+    const faces = result.faceAnnotations || [];
+
+    if (!faces.length) {
       return res.status(200).json({
         success: true,
         isCompliant: false,
-        message: "⚠️ No face detected. Please ensure your face is clearly visible.",
+        message: "⚠️ No face detected. Please ensure your face is visible.",
       });
     }
 
@@ -41,7 +53,6 @@ export default async function handler(req, res) {
       tiltAngle,
     } = face;
 
-    // --- Compliance checks ---
     const isNeutralExpression =
       joyLikelihood !== "VERY_LIKELY" &&
       angerLikelihood !== "VERY_LIKELY" &&
@@ -56,7 +67,6 @@ export default async function handler(req, res) {
     const isCompliant =
       isNeutralExpression && isFaceClear && noHeadwear && isFacingForward;
 
-    // --- Build message ---
     let message = "";
     if (isCompliant) {
       message = "✅ Face meets passport requirements: clear, neutral, and facing forward.";
@@ -85,7 +95,7 @@ export default async function handler(req, res) {
     console.error("Vision API error:", error);
     return res.status(500).json({
       success: false,
-      message: `❌ Vision API verification failed: ${error.message || error}`,
+      message: `❌ Vision API failed: ${error.message}`,
     });
   }
 }
