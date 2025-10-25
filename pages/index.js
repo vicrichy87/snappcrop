@@ -779,6 +779,14 @@ export default function Home() {
         }
         .animate-spin-slow {
           animation: spin-slow 3s linear infinite;
+        }
+        
+        @keyframes pulse-soft {
+          0%, 100% { transform: scale(1); opacity: 0.95; box-shadow: 0 0 10px rgba(56, 189, 248, 0.3); }
+          50% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 20px rgba(79, 70, 229, 0.4); }
+        }
+        .animate-pulse-soft {
+          animation: pulse-soft 2.5s ease-in-out infinite;
         }        
       `}</style>
 
@@ -790,19 +798,31 @@ export default function Home() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] bg-white/70 backdrop-blur-sm flex flex-col items-center justify-center"
           >
-            {/* Fancy gradient spinner */}
-            <div className="relative w-16 h-16 mb-4">
+            {/* Spinner with Snappcrop Logo */}
+            <div className="relative w-20 h-20 mb-5 flex items-center justify-center">
+              {/* Outer Rings */}
               <div className="absolute inset-0 rounded-full border-4 border-sky-200"></div>
               <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-sky-600 animate-spin"></div>
               <div className="absolute inset-0 rounded-full border-4 border-transparent border-b-indigo-500 animate-spin-slow"></div>
+        
+              {/* Logo in center */}
+              <div className="absolute w-10 h-10 rounded-full overflow-hidden shadow-lg bg-white flex items-center justify-center animate-pulse-soft">
+                <NextImage
+                  src={logo}
+                  alt="Snappcrop Logo"
+                  width={40}
+                  height={40}
+                  className="object-contain"
+                />
+              </div>
             </div>
         
+            {/* Text below */}
             <p className="text-sky-700 font-semibold text-sm animate-pulse">
-              ✨ Processing your photo, please wait...
+              Processing your photo, please wait...
             </p>
           </motion.div>
         )}
-
     </main>
   );
 }
